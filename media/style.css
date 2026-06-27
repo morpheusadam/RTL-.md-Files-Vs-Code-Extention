@@ -32,13 +32,23 @@ body {
 
 .tab, .ghost {
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: transparent;
   color: var(--vscode-foreground);
   border: 1px solid transparent;
-  padding: 4px 12px;
+  padding: 5px 12px;
   border-radius: 6px;
   font-family: var(--font-family);
   font-size: 13px;
+  line-height: 1;
+}
+
+.toolbar svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
 }
 
 .tab:hover, .ghost:hover {
