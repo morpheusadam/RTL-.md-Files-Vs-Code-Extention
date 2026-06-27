@@ -1,7 +1,7 @@
 {
   "name": "qalam-rtl-markdown",
   "displayName": "Qalam — RTL Markdown Editor",
-  "description": "Write and preview Markdown in a true right-to-left editor. Built for Persian, Arabic, Hebrew, and Urdu.",
+  "description": "The right-to-left Markdown editor for VS Code. Write and preview RTL documents with proper alignment and a live, theme-aware preview — purpose-built for Persian, Arabic, Hebrew, and Urdu.",
   "version": "0.0.1",
   "publisher": "morpheusadam",
   "license": "MIT",
