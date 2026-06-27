@@ -1,0 +1,188 @@
+:root {
+  --font-family: Vazirmatn, Tahoma, "Segoe UI", sans-serif;
+  --font-size: 16px;
+  --line-height: 2;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  color: var(--vscode-editor-foreground);
+  background: var(--vscode-editor-background);
+  font-family: var(--font-family);
+}
+
+/* نوار ابزار */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-editorWidget-background);
+}
+
+.toolbar .spacer { flex: 1; }
+
+.tab, .ghost {
+  cursor: pointer;
+  background: transparent;
+  color: var(--vscode-foreground);
+  border: 1px solid transparent;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-family: var(--font-family);
+  font-size: 13px;
+}
+
+.tab:hover, .ghost:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.15));
+}
+
+.tab.active {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.ghost {
+  border-color: var(--vscode-button-border, var(--vscode-panel-border));
+}
+
+/* بدنه */
+.container {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+#editor {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  resize: none;
+  border: none;
+  outline: none;
+  padding: 18px 24px;
+  background: var(--vscode-editor-background);
+  color: var(--vscode-editor-foreground);
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+  direction: rtl;
+  text-align: right;
+  unicode-bidi: plaintext;
+  tab-size: 2;
+}
+
+#preview {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  padding: 18px 30px;
+  direction: rtl;
+  text-align: right;
+  line-height: var(--line-height);
+  font-size: var(--font-size);
+}
+
+/* حالت‌ها */
+.container.mode-edit #preview { display: none; }
+.container.mode-edit #editor { display: block; }
+.container.mode-preview #editor { display: none; }
+.container.mode-preview #preview { display: block; }
+.container.mode-split #editor {
+  width: 50%;
+  border-inline-start: 1px solid var(--vscode-panel-border);
+}
+.container.mode-split #preview { width: 50%; }
+
+/* استایل خروجی مارک‌داون */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  line-height: 1.4;
+  margin: 1.2em 0 0.6em;
+  font-weight: 700;
+}
+.markdown-body h1 { font-size: 1.8em; border-bottom: 1px solid var(--vscode-panel-border); padding-bottom: 0.3em; }
+.markdown-body h2 { font-size: 1.5em; border-bottom: 1px solid var(--vscode-panel-border); padding-bottom: 0.2em; }
+.markdown-body h3 { font-size: 1.25em; }
+
+.markdown-body p { margin: 0.8em 0; }
+
+.markdown-body a { color: var(--vscode-textLink-foreground); }
+
+.markdown-body code {
+  font-family: "Consolas", "Courier New", monospace;
+  background: var(--vscode-textCodeBlock-background, rgba(128,128,128,0.15));
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  direction: ltr;
+  unicode-bidi: embed;
+  display: inline-block;
+}
+
+.markdown-body pre {
+  background: var(--vscode-textCodeBlock-background, rgba(128,128,128,0.12));
+  padding: 12px 16px;
+  border-radius: 8px;
+  overflow: auto;
+  direction: ltr;
+  text-align: left;
+}
+.markdown-body pre code {
+  background: transparent;
+  padding: 0;
+  display: block;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding-inline-start: 1.8em;
+  margin: 0.6em 0;
+}
+.markdown-body li { margin: 0.3em 0; }
+.markdown-body li.task { list-style: none; }
+.markdown-body li.task { margin-inline-start: -1.4em; }
+
+.markdown-body blockquote {
+  margin: 0.8em 0;
+  padding: 0.2em 1em;
+  border-inline-start: 4px solid var(--vscode-textBlockQuote-border, var(--vscode-panel-border));
+  background: var(--vscode-textBlockQuote-background, rgba(128,128,128,0.08));
+  color: var(--vscode-descriptionForeground);
+}
+
+.markdown-body hr {
+  border: none;
+  border-top: 1px solid var(--vscode-panel-border);
+  margin: 1.5em 0;
+}
+
+.markdown-body table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  width: 100%;
+}
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid var(--vscode-panel-border);
+  padding: 6px 12px;
+  text-align: right;
+}
+.markdown-body th {
+  background: var(--vscode-editorWidget-background);
+  font-weight: 700;
+}
+
+.markdown-body img { max-width: 100%; }

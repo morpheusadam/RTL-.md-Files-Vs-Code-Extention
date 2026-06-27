@@ -1,0 +1,119 @@
+{
+  "name": "qalam-rtl-markdown",
+  "displayName": "Qalam — RTL Markdown Editor",
+  "description": "Write and preview Markdown in a true right-to-left editor. Built for Persian, Arabic, Hebrew, and Urdu.",
+  "version": "0.0.1",
+  "publisher": "morpheusadam",
+  "license": "MIT",
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Other",
+    "Formatters",
+    "Visualization"
+  ],
+  "keywords": [
+    "rtl",
+    "markdown",
+    "right-to-left",
+    "persian",
+    "farsi",
+    "arabic",
+    "hebrew",
+    "urdu",
+    "bidi"
+  ],
+  "galleryBanner": {
+    "color": "#4338CA",
+    "theme": "dark"
+  },
+  "homepage": "https://github.com/morpheusadam/RTL-.md-Files-Vs-Code-Extention#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/morpheusadam/RTL-.md-Files-Vs-Code-Extention.git"
+  },
+  "bugs": {
+    "url": "https://github.com/morpheusadam/RTL-.md-Files-Vs-Code-Extention/issues"
+  },
+  "activationEvents": [],
+  "main": "./extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true,
+      "description": "This extension only renders and edits the content of the file you open."
+    }
+  },
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "rtlMarkdown.editor",
+        "displayName": "RTL Markdown Editor",
+        "selector": [
+          { "filenamePattern": "*.md" },
+          { "filenamePattern": "*.markdown" },
+          { "filenamePattern": "*.mdx" }
+        ],
+        "priority": "default"
+      }
+    ],
+    "commands": [
+      {
+        "command": "rtlMarkdown.openWithDefault",
+        "title": "RTL Markdown: Open in Text Editor"
+      },
+      {
+        "command": "rtlMarkdown.openWithRtl",
+        "title": "RTL Markdown: Open in RTL Editor"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "rtlMarkdown.openWithDefault",
+          "when": "activeCustomEditorId == rtlMarkdown.editor",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "rtlMarkdown.openWithRtl",
+          "when": "resourceExtname == .md || resourceExtname == .markdown || resourceExtname == .mdx",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "RTL Markdown",
+      "properties": {
+        "rtlMarkdown.fontFamily": {
+          "type": "string",
+          "default": "Vazirmatn, Vazir, Tahoma, 'Segoe UI', 'IRANSans', sans-serif",
+          "description": "Font family for the editor and preview."
+        },
+        "rtlMarkdown.fontSize": {
+          "type": "number",
+          "default": 16,
+          "description": "Font size in pixels."
+        },
+        "rtlMarkdown.lineHeight": {
+          "type": "number",
+          "default": 2,
+          "description": "Line height."
+        },
+        "rtlMarkdown.defaultMode": {
+          "type": "string",
+          "enum": ["edit", "split", "preview"],
+          "enumDescriptions": [
+            "Editing only",
+            "Editor and preview side by side",
+            "Rendered preview only"
+          ],
+          "default": "preview",
+          "description": "Which view to show when a file is opened."
+        }
+      }
+    }
+  }
+}
