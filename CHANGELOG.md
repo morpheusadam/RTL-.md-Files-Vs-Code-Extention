@@ -2,6 +2,42 @@
 
 All notable changes to the **Qalam — RTL Markdown Editor** extension are documented here.
 
+## [3.0.0]
+
+### Fixed
+- **Scrambled Preview layout** — in Preview mode the rendered document is no longer laid out as flex items, which previously broke long headings into overlapping vertical word-columns. The preview now flows as a normal block, exactly like a standard reading view.
+
+### Added
+- **Six new reading themes** — One Dark, Solarized Light, Solarized Dark, Rosé Pine, Gruvbox, and Monokai, bringing the total to **eleven**. Each ships with a full matching syntax-highlight palette.
+
+### Changed
+- **Fully English interface** — every piece of UI text (toolbar, outline/Contents panel, status bar, code Copy button, table and image templates) is now in English.
+- Document statistics now render with English (Latin) numerals.
+
+## [2.0.1]
+
+### Changed
+- Version bump for Marketplace re-publish (Marketplace versions are immutable; `2.0.0` was already taken). No functional changes from `2.0.0`.
+
+## [2.0.0] — Qalam v2 🎉
+
+The first **major** release. Qalam goes from a clean RTL viewer to a full-featured RTL Markdown studio: **colorful syntax-highlighted code**, **five reading themes**, a **formatting toolbar**, a **live outline**, and a **status bar** — all 100% offline and Restricted-Mode friendly. See the consolidated feature list below.
+
+## [0.0.3]
+
+### Added
+- **🎨 Colorful code blocks** — a built-in, offline syntax highlighter for 17+ languages (JS/TS, Python, JSON, HTML, CSS, Bash, SQL, Go, Rust, C/C++, C#, Java, Ruby, PHP, Kotlin, YAML, Markdown). Each block shows a language badge and a one-click **Copy** button.
+- **📖 Reading themes** — pick a beautiful preview template live from the toolbar: **Auto** (follows VS Code), **GitHub**, **Sepia (paper)**, **Nord**, and **Dracula**. New setting `rtlMarkdown.previewTheme`.
+- **🧰 Formatting toolbar** — one-click Bold, Italic, Strikethrough, inline code, headings, lists, checklists, quotes, links, images, tables, code blocks, and dividers. Keyboard shortcuts: `Ctrl/Cmd+B`, `Ctrl/Cmd+I`, `Ctrl/Cmd+K`.
+- **🧭 Live outline (table of contents)** — auto-generated from headings, with click-to-scroll and active-section highlighting. Toggle from the toolbar.
+- **📊 Status bar** — live word count, character count, line count, and estimated reading time (in Persian numerals).
+- **GitHub-style callouts** — `> [!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`.
+
+### Improved
+- Richer Markdown rendering: **nested lists**, **column alignment in tables**, **automatic links** for bare URLs, `==highlight==`, heading anchors, and safer attribute escaping.
+- Polished, theme-aware preview template with refined typography, accent-colored headings, zebra-striped tables, and rounded code cards.
+- The view mode, reading theme, and outline state are now **remembered** per editor.
+
 ## [0.0.2]
 
 ### Added

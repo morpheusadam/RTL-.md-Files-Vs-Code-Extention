@@ -44,17 +44,20 @@ VS Code's built-in editor is left-aligned and has no official API to flip text d
 <td width="50%" valign="top">
 
 - 🪶 **True RTL editing** — right-aligned, natural right-to-left base direction
-- 🪞 **Live preview** — fully RTL, synced scrolling in Split mode
-- 🧭 **Three view modes** — Edit · Split · Preview
-- 🔘 **Status bar toggle** — turn the RTL editor on/off with one click
-- 🎨 **Theme-aware** — follows your active VS Code color theme
+- 🎨 **Colorful code** — built-in offline syntax highlighting for 17+ languages, with a language badge and one-click **Copy**
+- 📖 **11 reading themes** — switch the preview template live: Auto · GitHub · Sepia · Nord · Dracula · One Dark · Solarized Light/Dark · Rosé Pine · Gruvbox · Monokai
+- 🧰 **Formatting toolbar** — bold, italic, headings, lists, checklists, links, tables & more (`Ctrl+B/I/K`)
+- 🧭 **Live outline** — auto table of contents with click-to-scroll
+- 📊 **Status bar** — word, character & line counts + reading time
 
 </td>
 <td width="50%" valign="top">
 
-- 🧱 **Rich rendering** — headings, lists, task lists, tables, quotes, code
+- 🪞 **Live preview** — fully RTL, synced scrolling in Split mode
+- 🧱 **Rich rendering** — headings, nested lists, task lists, aligned tables, quotes, GitHub callouts, auto-links
 - 🔤 **Smart code direction** — code stays LTR inside RTL text
-- ⚙️ **Customizable** — font, size, line height, default mode
+- 🔘 **Status bar toggle** — turn the RTL editor on/off with one click
+- ⚙️ **Customizable** — font, size, line height, default mode, reading theme
 - 🔌 **Offline & Restricted-Mode friendly** — no network, no trust needed
 
 </td>
@@ -85,6 +88,7 @@ Use the toolbar to switch between **Edit**, **Split**, and **Preview**.
 | `rtlMarkdown.fontSize` | `16` | Font size in pixels |
 | `rtlMarkdown.lineHeight` | `2` | Line height |
 | `rtlMarkdown.defaultMode` | `preview` | View on open: `edit`, `split`, or `preview` |
+| `rtlMarkdown.previewTheme` | `auto` | Reading theme: `auto`, `github`, `sepia`, `nord`, `dracula`, `one-dark`, `solarized-light`, `solarized-dark`, `rose-pine`, `gruvbox`, `monokai` (also switchable live from the toolbar) |
 
 > 💡 For the best Persian/Arabic typography, install the free **[Vazirmatn](https://github.com/rastikerdar/vazirmatn)** font.
 
@@ -95,7 +99,10 @@ Use the toolbar to switch between **Edit**, **Split**, and **Preview**.
 | Action | How |
 |---|---|
 | Save | `Ctrl / Cmd + S` |
+| Bold / Italic / Link | `Ctrl / Cmd + B` · `I` · `K` |
 | Insert indentation | `Tab` (two spaces) |
+| Toggle outline / change reading theme | Toolbar |
+| Copy a code block | **Copy** button on the block |
 | Open in RTL editor | Command Palette → **RTL Markdown: Open in RTL Editor** |
 | Open in plain text editor | Command Palette → **RTL Markdown: Open in Text Editor** |
 
@@ -130,8 +137,8 @@ Install the generated `.vsix` from the Extensions view → **…** → **Install
 
 ## ❓ FAQ
 
-**Does it support syntax highlighting like the native editor?**
-Qalam is a custom editor, so it shows clean RTL text rather than tokenized highlighting. For code-heavy Markdown, switch back to the text editor anytime via the toolbar button.
+**Does it support syntax highlighting?**
+Yes — the **rendered preview** colorizes fenced code blocks for 17+ languages using a built-in, fully offline highlighter (no network), complete with a language badge and a Copy button. The editing textarea itself stays clean RTL text; for token-by-token highlighting *while typing*, switch back to the text editor anytime via the toolbar button.
 
 **Will my changes sync with Git / the normal editor?**
 Yes. Qalam edits the real file; changes are two-way synced and saved normally.

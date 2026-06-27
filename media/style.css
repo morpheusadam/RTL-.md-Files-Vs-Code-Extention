@@ -2,6 +2,48 @@
   --font-family: Vazirmatn, Tahoma, "Segoe UI", sans-serif;
   --font-size: 16px;
   --line-height: 2;
+
+  /* Base template colors (default: follows the VS Code theme) */
+  --md-fg: var(--vscode-editor-foreground);
+  --md-bg: transparent;
+  --md-accent: var(--vscode-textLink-foreground, #4f8cff);
+  --md-accent-2: var(--vscode-textLink-activeForeground, #6ea8ff);
+  --md-muted: var(--vscode-descriptionForeground, #8a8a8a);
+  --md-border: var(--vscode-panel-border, rgba(128,128,128,0.3));
+  --md-code-bg: var(--vscode-textCodeBlock-background, rgba(128,128,128,0.12));
+  --md-quote-bg: var(--vscode-textBlockQuote-background, rgba(128,128,128,0.08));
+
+  /* Code token colors — defaults for dark themes */
+  --tok-keyword: #c586c0;
+  --tok-string: #ce9178;
+  --tok-number: #b5cea8;
+  --tok-comment: #6a9955;
+  --tok-function: #dcdcaa;
+  --tok-class: #4ec9b0;
+  --tok-builtin: #569cd6;
+  --tok-variable: #9cdcfe;
+  --tok-attr: #9cdcfe;
+  --tok-tag: #569cd6;
+  --tok-boolean: #569cd6;
+  --tok-operator: #d4d4d4;
+  --tok-punctuation: #cfcfcf;
+}
+
+/* Token palette for light VS Code themes */
+body.vscode-light {
+  --tok-keyword: #af00db;
+  --tok-string: #a31515;
+  --tok-number: #098658;
+  --tok-comment: #008000;
+  --tok-function: #795e26;
+  --tok-class: #267f99;
+  --tok-builtin: #0000ff;
+  --tok-variable: #001080;
+  --tok-attr: #e50000;
+  --tok-tag: #800000;
+  --tok-boolean: #0000ff;
+  --tok-operator: #383838;
+  --tok-punctuation: #444;
 }
 
 html, body {
@@ -18,19 +60,37 @@ body {
   font-family: var(--font-family);
 }
 
-/* نوار ابزار */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── Main toolbar ── */
 .toolbar {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  border-bottom: 1px solid var(--vscode-panel-border);
-  background: var(--vscode-editorWidget-background);
+  border-bottom: 1px solid var(--md-border);
+  background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+  flex: 0 0 auto;
 }
-
 .toolbar .spacer { flex: 1; }
 
-.tab, .ghost {
+.seg {
+  display: inline-flex;
+  background: var(--vscode-input-background, rgba(128,128,128,0.12));
+  border: 1px solid var(--md-border);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.tab, .ghost, .iconbtn {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -43,33 +103,118 @@ body {
   font-family: var(--font-family);
   font-size: 13px;
   line-height: 1;
+  transition: background .12s ease, color .12s ease;
 }
+.toolbar svg, .formatbar svg { width: 16px; height: 16px; flex: 0 0 auto; }
 
-.toolbar svg {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 auto;
+.tab:hover, .ghost:hover, .iconbtn:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.18));
 }
-
-.tab:hover, .ghost:hover {
-  background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.15));
-}
-
 .tab.active {
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
+  background: var(--md-accent);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+.tab.active svg { color: #fff; }
+.iconbtn.active {
+  background: var(--vscode-toolbar-hoverBackground, rgba(128,128,128,0.2));
+  color: var(--md-accent);
+}
+.ghost { border-color: var(--vscode-button-border, var(--md-border)); }
+
+.theme-select {
+  font-family: var(--font-family);
+  font-size: 12.5px;
+  color: var(--vscode-foreground);
+  background: var(--vscode-dropdown-background, var(--vscode-input-background));
+  border: 1px solid var(--vscode-dropdown-border, var(--md-border));
+  border-radius: 6px;
+  padding: 5px 8px;
+  cursor: pointer;
 }
 
-.ghost {
-  border-color: var(--vscode-button-border, var(--vscode-panel-border));
+/* ── Formatting toolbar ── */
+.formatbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--md-border);
+  background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+  flex: 0 0 auto;
+  flex-wrap: wrap;
 }
+.fmt {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 28px;
+  padding: 0 7px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-family: var(--font-family);
+  font-size: 13px;
+}
+.fmt:hover { background: var(--vscode-toolbar-hoverBackground, rgba(128,128,128,0.18)); }
+.fmt:active { transform: translateY(1px); }
+.fmt b { font-weight: 800; }
+.fmt i { font-style: italic; }
+.fmt .sep { color: var(--md-muted); }
+.fmt-divider { width: 1px; height: 18px; background: var(--md-border); margin: 0 4px; }
 
-/* بدنه */
+body.preview-only .formatbar { display: none; }
+
+/* ── Body ── */
 .container {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   min-height: 0;
 }
+
+/* Table-of-contents panel */
+.outline {
+  width: 240px;
+  flex: 0 0 240px;
+  overflow: auto;
+  border-inline-end: 1px solid var(--md-border);
+  background: var(--vscode-sideBar-background, var(--vscode-editorWidget-background));
+  padding: 10px 6px;
+  display: none;
+  direction: ltr;
+  text-align: left;
+}
+body.toc-open .outline { display: block; }
+.outline-title {
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--md-muted);
+  padding: 4px 10px 8px;
+}
+.outline a {
+  display: block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: var(--vscode-foreground);
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 1.5;
+  border-inline-start: 2px solid transparent;
+}
+.outline a:hover { background: var(--vscode-list-hoverBackground, rgba(128,128,128,0.12)); }
+.outline a.active {
+  color: var(--md-accent);
+  border-inline-start-color: var(--md-accent);
+  background: var(--vscode-list-activeSelectionBackground, rgba(128,128,128,0.12));
+}
+.outline a.lvl-1 { font-weight: 700; }
+.outline a.lvl-2 { padding-inline-start: 22px; }
+.outline a.lvl-3 { padding-inline-start: 34px; font-size: 12.5px; }
+.outline a.lvl-4, .outline a.lvl-5, .outline a.lvl-6 { padding-inline-start: 46px; font-size: 12px; color: var(--md-muted); }
 
 #editor {
   box-sizing: border-box;
@@ -95,25 +240,30 @@ body {
   width: 100%;
   height: 100%;
   overflow: auto;
-  padding: 18px 30px;
+  padding: 26px 34px;
   direction: rtl;
   text-align: right;
   line-height: var(--line-height);
   font-size: var(--font-size);
+  color: var(--md-fg);
+  background: var(--md-bg);
+  scroll-behavior: smooth;
 }
 
-/* حالت‌ها */
+/* ── View modes ── */
 .container.mode-edit #preview { display: none; }
 .container.mode-edit #editor { display: block; }
 .container.mode-preview #editor { display: none; }
-.container.mode-preview #preview { display: block; }
+.container.mode-preview #preview { display: block; flex: 1 1 auto; min-width: 0; }
 .container.mode-split #editor {
   width: 50%;
-  border-inline-start: 1px solid var(--vscode-panel-border);
+  border-inline-start: 1px solid var(--md-border);
 }
 .container.mode-split #preview { width: 50%; }
 
-/* استایل خروجی مارک‌داون */
+/* ════════ Rendered Markdown template ════════ */
+.markdown-body { word-wrap: break-word; }
+
 .markdown-body h1,
 .markdown-body h2,
 .markdown-body h3,
@@ -121,29 +271,103 @@ body {
 .markdown-body h5,
 .markdown-body h6 {
   line-height: 1.4;
-  margin: 1.2em 0 0.6em;
+  margin: 1.4em 0 0.6em;
   font-weight: 700;
+  position: relative;
+  scroll-margin-top: 12px;
 }
-.markdown-body h1 { font-size: 1.8em; border-bottom: 1px solid var(--vscode-panel-border); padding-bottom: 0.3em; }
-.markdown-body h2 { font-size: 1.5em; border-bottom: 1px solid var(--vscode-panel-border); padding-bottom: 0.2em; }
-.markdown-body h3 { font-size: 1.25em; }
+.markdown-body h1 { font-size: 1.9em; color: var(--md-accent); border-bottom: 2px solid var(--md-border); padding-bottom: 0.3em; }
+.markdown-body h2 { font-size: 1.5em; border-bottom: 1px solid var(--md-border); padding-bottom: 0.2em; }
+.markdown-body h3 { font-size: 1.27em; color: var(--md-accent-2); }
+.markdown-body h4 { font-size: 1.1em; }
+.markdown-body h5 { font-size: 1em; color: var(--md-muted); }
+.markdown-body h6 { font-size: 0.92em; color: var(--md-muted); }
 
-.markdown-body p { margin: 0.8em 0; }
+.markdown-body .anchor {
+  position: absolute;
+  inset-inline-end: 100%;
+  padding-inline-end: 8px;
+  color: var(--md-muted);
+  text-decoration: none;
+  opacity: 0;
+  font-weight: 400;
+  transition: opacity .12s ease;
+}
+.markdown-body h1:hover .anchor,
+.markdown-body h2:hover .anchor,
+.markdown-body h3:hover .anchor,
+.markdown-body h4:hover .anchor { opacity: 0.7; }
 
-.markdown-body a { color: var(--vscode-textLink-foreground); }
+.markdown-body p { margin: 0.85em 0; }
+.markdown-body a { color: var(--md-accent); text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+
+.markdown-body strong { font-weight: 800; }
+.markdown-body mark { background: var(--vscode-editor-findMatchHighlightBackground, #ffd54f); color: inherit; border-radius: 3px; padding: 0 .2em; }
 
 .markdown-body code {
-  font-family: "Consolas", "Courier New", monospace;
-  background: var(--vscode-textCodeBlock-background, rgba(128,128,128,0.15));
-  padding: 0.15em 0.4em;
-  border-radius: 4px;
+  font-family: "Cascadia Code", "Consolas", "Courier New", monospace;
+  background: var(--md-code-bg);
+  padding: 0.12em 0.42em;
+  border-radius: 5px;
+  font-size: 0.9em;
   direction: ltr;
   unicode-bidi: embed;
   display: inline-block;
 }
 
+/* Colorful code block with header */
+.markdown-body .code-block {
+  margin: 1.1em 0;
+  border: 1px solid var(--md-border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--md-code-bg);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+.markdown-body .code-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  direction: ltr;
+  padding: 5px 12px;
+  background: rgba(128,128,128,0.10);
+  border-bottom: 1px solid var(--md-border);
+  font-family: "Cascadia Code", "Consolas", monospace;
+}
+.markdown-body .code-lang {
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--md-muted);
+  font-weight: 700;
+}
+.markdown-body .code-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--md-border);
+  color: var(--md-muted);
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: 11.5px;
+  font-family: var(--font-family);
+  transition: all .12s ease;
+}
+.markdown-body .code-copy:hover { color: var(--md-accent); border-color: var(--md-accent); }
+.markdown-body .code-copy.copied { color: #2ea043; border-color: #2ea043; }
+.markdown-body .code-block pre {
+  margin: 0;
+  padding: 14px 16px;
+  overflow: auto;
+  direction: ltr;
+  text-align: left;
+  background: transparent;
+}
 .markdown-body pre {
-  background: var(--vscode-textCodeBlock-background, rgba(128,128,128,0.12));
+  background: var(--md-code-bg);
   padding: 12px 16px;
   border-radius: 8px;
   overflow: auto;
@@ -154,45 +378,149 @@ body {
   background: transparent;
   padding: 0;
   display: block;
+  font-size: 0.86em;
+  line-height: 1.65;
 }
+
+/* Code token coloring */
+.markdown-body .tok-keyword { color: var(--tok-keyword); }
+.markdown-body .tok-string { color: var(--tok-string); }
+.markdown-body .tok-number { color: var(--tok-number); }
+.markdown-body .tok-comment { color: var(--tok-comment); font-style: italic; }
+.markdown-body .tok-function { color: var(--tok-function); }
+.markdown-body .tok-class { color: var(--tok-class); }
+.markdown-body .tok-builtin { color: var(--tok-builtin); }
+.markdown-body .tok-variable { color: var(--tok-variable); }
+.markdown-body .tok-attr { color: var(--tok-attr); }
+.markdown-body .tok-tag { color: var(--tok-tag); }
+.markdown-body .tok-boolean { color: var(--tok-boolean); }
+.markdown-body .tok-operator { color: var(--tok-operator); }
+.markdown-body .tok-punctuation { color: var(--tok-punctuation); }
 
 .markdown-body ul,
-.markdown-body ol {
-  padding-inline-start: 1.8em;
-  margin: 0.6em 0;
-}
+.markdown-body ol { padding-inline-start: 1.8em; margin: 0.6em 0; }
 .markdown-body li { margin: 0.3em 0; }
-.markdown-body li.task { list-style: none; }
-.markdown-body li.task { margin-inline-start: -1.4em; }
+.markdown-body li.task { list-style: none; margin-inline-start: -1.4em; }
+.markdown-body li.task input { margin-inline-end: 6px; }
 
 .markdown-body blockquote {
-  margin: 0.8em 0;
-  padding: 0.2em 1em;
-  border-inline-start: 4px solid var(--vscode-textBlockQuote-border, var(--vscode-panel-border));
-  background: var(--vscode-textBlockQuote-background, rgba(128,128,128,0.08));
-  color: var(--vscode-descriptionForeground);
+  margin: 0.9em 0;
+  padding: 0.4em 1em;
+  border-inline-start: 4px solid var(--md-accent);
+  background: var(--md-quote-bg);
+  color: var(--md-muted);
+  border-radius: 0 8px 8px 0;
 }
+.markdown-body blockquote p { margin: 0.4em 0; }
 
-.markdown-body hr {
-  border: none;
-  border-top: 1px solid var(--vscode-panel-border);
-  margin: 1.5em 0;
-}
+/* Callouts (GitHub-style) */
+.markdown-body blockquote.callout { border-radius: 8px; }
+.markdown-body .callout-title { font-weight: 800; letter-spacing: .04em; margin: 0 0 .3em; font-size: .82em; }
+.markdown-body .callout-note { border-inline-start-color: #4493f8; background: rgba(68,147,248,0.10); }
+.markdown-body .callout-note .callout-title { color: #4493f8; }
+.markdown-body .callout-tip { border-inline-start-color: #2ea043; background: rgba(46,160,67,0.10); }
+.markdown-body .callout-tip .callout-title { color: #2ea043; }
+.markdown-body .callout-important { border-inline-start-color: #a371f7; background: rgba(163,113,247,0.10); }
+.markdown-body .callout-important .callout-title { color: #a371f7; }
+.markdown-body .callout-warning { border-inline-start-color: #d29922; background: rgba(210,153,34,0.10); }
+.markdown-body .callout-warning .callout-title { color: #d29922; }
+.markdown-body .callout-caution { border-inline-start-color: #f85149; background: rgba(248,81,73,0.10); }
+.markdown-body .callout-caution .callout-title { color: #f85149; }
 
-.markdown-body table {
-  border-collapse: collapse;
-  margin: 1em 0;
-  width: 100%;
-}
-.markdown-body th,
-.markdown-body td {
-  border: 1px solid var(--vscode-panel-border);
-  padding: 6px 12px;
-  text-align: right;
-}
-.markdown-body th {
-  background: var(--vscode-editorWidget-background);
-  font-weight: 700;
-}
+.markdown-body hr { border: none; border-top: 1px solid var(--md-border); margin: 1.6em 0; }
 
-.markdown-body img { max-width: 100%; }
+.markdown-body table { border-collapse: collapse; margin: 1.1em 0; width: 100%; border-radius: 8px; overflow: hidden; }
+.markdown-body th, .markdown-body td { border: 1px solid var(--md-border); padding: 7px 13px; text-align: right; }
+.markdown-body th { background: var(--vscode-editorWidget-background, rgba(128,128,128,0.12)); font-weight: 700; }
+.markdown-body tbody tr:nth-child(even) { background: rgba(128,128,128,0.05); }
+
+.markdown-body img { max-width: 100%; border-radius: 8px; }
+
+/* ── Bottom status bar ── */
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 14px;
+  border-top: 1px solid var(--md-border);
+  background: var(--vscode-statusBar-background, var(--vscode-editorWidget-background));
+  color: var(--vscode-statusBar-foreground, var(--md-muted));
+  font-size: 12px;
+  flex: 0 0 auto;
+  direction: ltr;
+}
+.statusbar .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--md-accent); }
+.statusbar .spacer { flex: 1; }
+.statusbar .stat b { font-weight: 700; color: var(--vscode-foreground); }
+
+/* ════════ Reading themes (applied to the preview only) ════════ */
+#preview.theme-github {
+  --md-fg: #1f2328; --md-bg: #ffffff; --md-accent: #0969da; --md-accent-2: #0a5cc4;
+  --md-muted: #59636e; --md-border: #d1d9e0; --md-code-bg: #f6f8fa; --md-quote-bg: #f6f8fa;
+  --tok-keyword:#cf222e; --tok-string:#0a3069; --tok-number:#0550ae; --tok-comment:#6e7781;
+  --tok-function:#8250df; --tok-class:#953800; --tok-builtin:#0550ae; --tok-variable:#24292f;
+  --tok-attr:#0550ae; --tok-tag:#116329; --tok-boolean:#0550ae; --tok-operator:#0550ae; --tok-punctuation:#24292f;
+}
+#preview.theme-sepia {
+  --md-fg: #4a3f30; --md-bg: #f4ecd8; --md-accent: #9a3b2f; --md-accent-2: #b5563f;
+  --md-muted: #8a7a5c; --md-border: #d8c9a8; --md-code-bg: #ece0c4; --md-quote-bg: #ece0c4;
+  --tok-keyword:#9a3b2f; --tok-string:#5b7a3a; --tok-number:#8a5a00; --tok-comment:#a09277;
+  --tok-function:#7a5230; --tok-class:#2f6f6a; --tok-builtin:#3a5a8a; --tok-variable:#4a3f30;
+  --tok-attr:#3a5a8a; --tok-tag:#5b7a3a; --tok-boolean:#8a5a00; --tok-operator:#6a5d45; --tok-punctuation:#6a5d45;
+}
+#preview.theme-nord {
+  --md-fg: #d8dee9; --md-bg: #2e3440; --md-accent: #88c0d0; --md-accent-2: #8fbcbb;
+  --md-muted: #7b8494; --md-border: #434c5e; --md-code-bg: #3b4252; --md-quote-bg: #3b4252;
+  --tok-keyword:#81a1c1; --tok-string:#a3be8c; --tok-number:#b48ead; --tok-comment:#616e88;
+  --tok-function:#88c0d0; --tok-class:#8fbcbb; --tok-builtin:#81a1c1; --tok-variable:#d8dee9;
+  --tok-attr:#8fbcbb; --tok-tag:#81a1c1; --tok-boolean:#b48ead; --tok-operator:#81a1c1; --tok-punctuation:#d8dee9;
+}
+#preview.theme-dracula {
+  --md-fg: #f8f8f2; --md-bg: #282a36; --md-accent: #bd93f9; --md-accent-2: #ff79c6;
+  --md-muted: #9aa0b3; --md-border: #44475a; --md-code-bg: #21222c; --md-quote-bg: #343746;
+  --tok-keyword:#ff79c6; --tok-string:#f1fa8c; --tok-number:#bd93f9; --tok-comment:#6272a4;
+  --tok-function:#50fa7b; --tok-class:#8be9fd; --tok-builtin:#8be9fd; --tok-variable:#f8f8f2;
+  --tok-attr:#50fa7b; --tok-tag:#ff79c6; --tok-boolean:#bd93f9; --tok-operator:#ff79c6; --tok-punctuation:#f8f8f2;
+}
+#preview.theme-one-dark {
+  --md-fg: #abb2bf; --md-bg: #282c34; --md-accent: #61afef; --md-accent-2: #c678dd;
+  --md-muted: #7f8696; --md-border: #3e4451; --md-code-bg: #2c313a; --md-quote-bg: #2c313a;
+  --tok-keyword:#c678dd; --tok-string:#98c379; --tok-number:#d19a66; --tok-comment:#7f848e;
+  --tok-function:#61afef; --tok-class:#e5c07b; --tok-builtin:#56b6c2; --tok-variable:#e06c75;
+  --tok-attr:#d19a66; --tok-tag:#e06c75; --tok-boolean:#d19a66; --tok-operator:#56b6c2; --tok-punctuation:#abb2bf;
+}
+#preview.theme-solarized-light {
+  --md-fg: #586e75; --md-bg: #fdf6e3; --md-accent: #268bd2; --md-accent-2: #2aa198;
+  --md-muted: #93a1a1; --md-border: #eee8d5; --md-code-bg: #eee8d5; --md-quote-bg: #eee8d5;
+  --tok-keyword:#859900; --tok-string:#2aa198; --tok-number:#d33682; --tok-comment:#93a1a1;
+  --tok-function:#268bd2; --tok-class:#b58900; --tok-builtin:#cb4b16; --tok-variable:#586e75;
+  --tok-attr:#268bd2; --tok-tag:#859900; --tok-boolean:#d33682; --tok-operator:#859900; --tok-punctuation:#586e75;
+}
+#preview.theme-solarized-dark {
+  --md-fg: #93a1a1; --md-bg: #002b36; --md-accent: #268bd2; --md-accent-2: #2aa198;
+  --md-muted: #586e75; --md-border: #073642; --md-code-bg: #073642; --md-quote-bg: #073642;
+  --tok-keyword:#859900; --tok-string:#2aa198; --tok-number:#d33682; --tok-comment:#586e75;
+  --tok-function:#268bd2; --tok-class:#b58900; --tok-builtin:#cb4b16; --tok-variable:#93a1a1;
+  --tok-attr:#268bd2; --tok-tag:#859900; --tok-boolean:#d33682; --tok-operator:#859900; --tok-punctuation:#93a1a1;
+}
+#preview.theme-rose-pine {
+  --md-fg: #e0def4; --md-bg: #191724; --md-accent: #c4a7e7; --md-accent-2: #ebbcba;
+  --md-muted: #6e6a86; --md-border: #26233a; --md-code-bg: #1f1d2e; --md-quote-bg: #1f1d2e;
+  --tok-keyword:#31748f; --tok-string:#f6c177; --tok-number:#ebbcba; --tok-comment:#6e6a86;
+  --tok-function:#ebbcba; --tok-class:#9ccfd8; --tok-builtin:#c4a7e7; --tok-variable:#e0def4;
+  --tok-attr:#9ccfd8; --tok-tag:#31748f; --tok-boolean:#ebbcba; --tok-operator:#908caa; --tok-punctuation:#e0def4;
+}
+#preview.theme-gruvbox {
+  --md-fg: #ebdbb2; --md-bg: #282828; --md-accent: #83a598; --md-accent-2: #fabd2f;
+  --md-muted: #928374; --md-border: #3c3836; --md-code-bg: #32302f; --md-quote-bg: #32302f;
+  --tok-keyword:#fb4934; --tok-string:#b8bb26; --tok-number:#d3869b; --tok-comment:#928374;
+  --tok-function:#fabd2f; --tok-class:#8ec07c; --tok-builtin:#83a598; --tok-variable:#ebdbb2;
+  --tok-attr:#83a598; --tok-tag:#fb4934; --tok-boolean:#d3869b; --tok-operator:#fe8019; --tok-punctuation:#ebdbb2;
+}
+#preview.theme-monokai {
+  --md-fg: #f8f8f2; --md-bg: #272822; --md-accent: #66d9ef; --md-accent-2: #a6e22e;
+  --md-muted: #8f908a; --md-border: #3e3d32; --md-code-bg: #1e1f1c; --md-quote-bg: #32332b;
+  --tok-keyword:#f92672; --tok-string:#e6db74; --tok-number:#ae81ff; --tok-comment:#75715e;
+  --tok-function:#a6e22e; --tok-class:#66d9ef; --tok-builtin:#66d9ef; --tok-variable:#f8f8f2;
+  --tok-attr:#a6e22e; --tok-tag:#f92672; --tok-boolean:#ae81ff; --tok-operator:#f92672; --tok-punctuation:#f8f8f2;
+}

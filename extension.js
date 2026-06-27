@@ -1,5 +1,5 @@
-// RTL Markdown — ویرایشگر سفارشی راست‌به‌چپ برای فایل‌های مارک‌داون
-// نوشته‌شده با JavaScript خالص تا بدون مرحله build قابل اجرا باشد.
+// RTL Markdown — a custom right-to-left editor for Markdown files.
+// Written in plain JavaScript so it runs without a build step.
 
 const vscode = require('vscode');
 
@@ -187,7 +187,8 @@ class RtlMarkdownEditorProvider {
       fontFamily: c.get('fontFamily'),
       fontSize: c.get('fontSize'),
       lineHeight: c.get('lineHeight'),
-      defaultMode: c.get('defaultMode')
+      defaultMode: c.get('defaultMode'),
+      previewTheme: c.get('previewTheme')
     };
   }
 
@@ -208,8 +209,19 @@ class RtlMarkdownEditorProvider {
     const nonce = getNonce();
     const mediaRoot = vscode.Uri.joinPath(this.context.extensionUri, 'media');
     const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'style.css'));
+    const hlUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'highlight.js'));
     const mdUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'markdown.js'));
     const mainUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'main.js'));
+
+    const ICON = {
+      edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+      split: '<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/>',
+      preview: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+      list: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
+      open: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>'
+    };
+    const svg = (p, w) => `<svg viewBox="0 0 24 24" width="${w || 16}" height="${w || 16}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+    const fmt = (key, label, title) => `<button class="fmt" type="button" data-fmt="${key}" title="${title}">${label}</button>`;
 
     return `<!DOCTYPE html>
 <html lang="en" dir="ltr">
@@ -218,32 +230,72 @@ class RtlMarkdownEditorProvider {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https: data:; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
   <link href="${styleUri}" rel="stylesheet">
-  <title>RTL Markdown</title>
+  <title>Qalam — RTL Markdown</title>
 </head>
 <body>
   <div class="toolbar">
-    <button id="tab-edit" class="tab" type="button" title="Edit">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      <span>Edit</span>
-    </button>
-    <button id="tab-split" class="tab" type="button" title="Split">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
-      <span>Split</span>
-    </button>
-    <button id="tab-preview" class="tab" type="button" title="Preview">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-      <span>Preview</span>
-    </button>
+    <div class="seg">
+      <button id="tab-edit" class="tab" type="button" title="Edit">${svg(ICON.edit)}<span>Edit</span></button>
+      <button id="tab-split" class="tab" type="button" title="Split">${svg(ICON.split)}<span>Split</span></button>
+      <button id="tab-preview" class="tab" type="button" title="Preview">${svg(ICON.preview)}<span>Preview</span></button>
+    </div>
     <span class="spacer"></span>
-    <button id="open-default" class="ghost" type="button" title="Open in Text Editor">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
-      <span>Open in Text Editor</span>
-    </button>
+    <button id="toc-toggle" class="iconbtn" type="button" title="Table of contents">${svg(ICON.list)}<span>Contents</span></button>
+    <label class="visually-hidden" for="theme-select">Reading theme</label>
+    <select id="theme-select" class="theme-select" title="Reading theme">
+      <option value="auto">🎨 Theme: Auto</option>
+      <option value="github">🌕 GitHub</option>
+      <option value="sepia">📜 Sepia (Paper)</option>
+      <option value="nord">❄️ Nord</option>
+      <option value="dracula">🧛 Dracula</option>
+      <option value="one-dark">🌌 One Dark</option>
+      <option value="solarized-light">🌅 Solarized Light</option>
+      <option value="solarized-dark">🌃 Solarized Dark</option>
+      <option value="rose-pine">🌹 Rosé Pine</option>
+      <option value="gruvbox">🍂 Gruvbox</option>
+      <option value="monokai">🎬 Monokai</option>
+    </select>
+    <button id="open-default" class="ghost" type="button" title="Open in Text Editor">${svg(ICON.open)}<span>Text Editor</span></button>
   </div>
+
+  <div class="formatbar" role="toolbar" aria-label="Formatting">
+    ${fmt('bold', '<b>B</b>', 'Bold — Ctrl+B')}
+    ${fmt('italic', '<i>I</i>', 'Italic — Ctrl+I')}
+    ${fmt('strike', '<span style="text-decoration:line-through">S</span>', 'Strikethrough')}
+    ${fmt('code', '&lt;/&gt;', 'Inline code')}
+    <span class="fmt-divider"></span>
+    ${fmt('h1', 'H1', 'Heading 1')}
+    ${fmt('h2', 'H2', 'Heading 2')}
+    ${fmt('h3', 'H3', 'Heading 3')}
+    <span class="fmt-divider"></span>
+    ${fmt('ul', '•', 'Bullet list')}
+    ${fmt('ol', '1.', 'Numbered list')}
+    ${fmt('task', '☑', 'Checklist')}
+    ${fmt('quote', '❝', 'Quote')}
+    <span class="fmt-divider"></span>
+    ${fmt('link', '🔗', 'Link — Ctrl+K')}
+    ${fmt('image', '🖼', 'Image')}
+    ${fmt('table', '▦', 'Table')}
+    ${fmt('codeblock', '{ }', 'Code block')}
+    ${fmt('hr', '―', 'Divider')}
+  </div>
+
   <div class="container" id="container">
+    <nav id="outline" class="outline" aria-label="Outline"></nav>
     <textarea id="editor" dir="rtl" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"></textarea>
     <div id="preview" class="markdown-body" dir="rtl"></div>
   </div>
+
+  <div class="statusbar">
+    <span class="dot"></span>
+    <span class="stat">Words: <b id="stat-words">0</b></span>
+    <span class="stat">Characters: <b id="stat-chars">0</b></span>
+    <span class="stat">Lines: <b id="stat-lines">0</b></span>
+    <span class="spacer"></span>
+    <span class="stat">⏱ Reading time: <b id="stat-read">1</b> min</span>
+  </div>
+
+  <script nonce="${nonce}" src="${hlUri}"></script>
   <script nonce="${nonce}" src="${mdUri}"></script>
   <script nonce="${nonce}" src="${mainUri}"></script>
 </body>

@@ -1,8 +1,8 @@
 {
   "name": "qalam-rtl-markdown",
   "displayName": "Qalam — RTL Markdown Editor",
-  "description": "The right-to-left Markdown editor for VS Code. Write and preview RTL documents with proper alignment and a live, theme-aware preview — purpose-built for Persian, Arabic, Hebrew, and Urdu.",
-  "version": "0.0.2",
+  "description": "The right-to-left Markdown editor for VS Code. Write and preview RTL documents with proper alignment, colorful syntax-highlighted code, beautiful reading themes, a live outline, and a formatting toolbar — purpose-built for Persian, Arabic, Hebrew, and Urdu.",
+  "version": "3.0.0",
   "publisher": "morpheusadam",
   "license": "MIT",
   "icon": "icon.png",
@@ -118,6 +118,37 @@
           ],
           "default": "preview",
           "description": "Which view to show when a file is opened."
+        },
+        "rtlMarkdown.previewTheme": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "github",
+            "sepia",
+            "nord",
+            "dracula",
+            "one-dark",
+            "solarized-light",
+            "solarized-dark",
+            "rose-pine",
+            "gruvbox",
+            "monokai"
+          ],
+          "enumDescriptions": [
+            "Follow the active VS Code color theme",
+            "Clean light GitHub style",
+            "Warm sepia paper — easy on the eyes",
+            "Cool Nord dark palette",
+            "Vibrant Dracula dark palette",
+            "Atom One Dark palette",
+            "Solarized Light — warm low-contrast light",
+            "Solarized Dark — muted teal dark",
+            "Rosé Pine — soft muted dark",
+            "Gruvbox — retro warm dark",
+            "Monokai — classic vivid dark"
+          ],
+          "default": "auto",
+          "description": "Reading theme for the rendered preview. Can also be changed live from the toolbar."
         }
       }
     }
