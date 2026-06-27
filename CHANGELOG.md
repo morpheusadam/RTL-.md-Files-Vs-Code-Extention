@@ -2,6 +2,12 @@
 
 All notable changes to the **Qalam — RTL Markdown Editor** extension are documented here.
 
+## [0.0.2]
+
+### Added
+- **Status bar toggle** — a button in the footer that enables/disables the RTL Markdown editor with one click. When toggled, the active Markdown file instantly switches between the RTL editor and the normal text editor.
+- New command: **RTL Markdown: Toggle RTL Editor**.
+
 ## [0.0.1]
 
 ### Added

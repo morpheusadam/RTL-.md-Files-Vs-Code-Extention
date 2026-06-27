@@ -3,6 +3,12 @@
 
 const vscode = require('vscode');
 
+const VIEW_TYPE = 'rtlMarkdown.editor';
+const MD_PATTERNS = ['*.md', '*.markdown', '*.mdx'];
+const MD_RE = /\.(md|markdown|mdx)$/i;
+
+let statusBarItem;
+
 function activate(context) {
   const provider = new RtlMarkdownEditorProvider(context);
 
@@ -30,6 +36,83 @@ function activate(context) {
       }
     })
   );
+
+  // Toggle command — turn the RTL editor on/off for Markdown.
+  context.subscriptions.push(
+    vscode.commands.registerCommand('rtlMarkdown.toggle', toggleRtl)
+  );
+
+  // Status bar (footer) button.
+  statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+  statusBarItem.command = 'rtlMarkdown.toggle';
+  context.subscriptions.push(statusBarItem);
+  updateStatusBar();
+  statusBarItem.show();
+
+  // Keep the button in sync if the association changes elsewhere.
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('workbench.editorAssociations')) {
+        updateStatusBar();
+      }
+    })
+  );
+}
+
+function rtlIsEnabled() {
+  const assoc = vscode.workspace.getConfiguration().get('workbench.editorAssociations') || {};
+  return assoc['*.md'] === VIEW_TYPE;
+}
+
+async function setRtlEnabled(enabled) {
+  const cfg = vscode.workspace.getConfiguration();
+  const assoc = Object.assign({}, cfg.get('workbench.editorAssociations') || {});
+  for (const pattern of MD_PATTERNS) {
+    if (enabled) {
+      assoc[pattern] = VIEW_TYPE;
+    } else if (assoc[pattern] === VIEW_TYPE) {
+      delete assoc[pattern];
+    }
+  }
+  await cfg.update('workbench.editorAssociations', assoc, vscode.ConfigurationTarget.Global);
+}
+
+function activeMarkdownUri() {
+  const group = vscode.window.tabGroups.activeTabGroup;
+  const tab = group && group.activeTab;
+  const input = tab && tab.input;
+  if (!input) return undefined;
+  const uri = input.uri;
+  if (uri && MD_RE.test(uri.path)) return uri;
+  return undefined;
+}
+
+async function toggleRtl() {
+  const next = !rtlIsEnabled();
+  await setRtlEnabled(next);
+  updateStatusBar();
+
+  const uri = activeMarkdownUri();
+  if (uri) {
+    await vscode.commands.executeCommand('vscode.openWith', uri, next ? VIEW_TYPE : 'default');
+  }
+
+  vscode.window.setStatusBarMessage(
+    next ? '$(check) RTL Markdown editor enabled' : '$(circle-slash) RTL Markdown editor disabled',
+    2500
+  );
+}
+
+function updateStatusBar() {
+  if (!statusBarItem) return;
+  const on = rtlIsEnabled();
+  statusBarItem.text = on ? '$(book) RTL' : '$(book) RTL: off';
+  statusBarItem.tooltip = on
+    ? 'RTL Markdown is ON — Markdown opens in the right-to-left editor.\nClick to disable.'
+    : 'RTL Markdown is OFF — Markdown opens in the normal editor.\nClick to enable.';
+  statusBarItem.backgroundColor = on
+    ? undefined
+    : new vscode.ThemeColor('statusBarItem.warningBackground');
 }
 
 function resolveUri(uri) {

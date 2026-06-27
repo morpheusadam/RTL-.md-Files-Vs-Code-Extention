@@ -46,6 +46,7 @@ VS Code's built-in editor is left-aligned and has no official API to flip text d
 - 🪶 **True RTL editing** — right-aligned, natural right-to-left base direction
 - 🪞 **Live preview** — fully RTL, synced scrolling in Split mode
 - 🧭 **Three view modes** — Edit · Split · Preview
+- 🔘 **Status bar toggle** — turn the RTL editor on/off with one click
 - 🎨 **Theme-aware** — follows your active VS Code color theme
 
 </td>

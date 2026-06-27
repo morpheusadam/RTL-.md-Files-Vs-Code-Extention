@@ -2,7 +2,7 @@
   "name": "qalam-rtl-markdown",
   "displayName": "Qalam — RTL Markdown Editor",
   "description": "The right-to-left Markdown editor for VS Code. Write and preview RTL documents with proper alignment and a live, theme-aware preview — purpose-built for Persian, Arabic, Hebrew, and Urdu.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "morpheusadam",
   "license": "MIT",
   "icon": "icon.png",
@@ -37,7 +37,9 @@
   "bugs": {
     "url": "https://github.com/morpheusadam/RTL-.md-Files-Vs-Code-Extention/issues"
   },
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./extension.js",
   "capabilities": {
     "untrustedWorkspaces": {
@@ -66,6 +68,10 @@
       {
         "command": "rtlMarkdown.openWithRtl",
         "title": "RTL Markdown: Open in RTL Editor"
+      },
+      {
+        "command": "rtlMarkdown.toggle",
+        "title": "RTL Markdown: Toggle RTL Editor"
       }
     ],
     "menus": {
