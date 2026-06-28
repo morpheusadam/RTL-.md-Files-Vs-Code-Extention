@@ -47,6 +47,7 @@ VS Code's built-in editor is left-aligned and has no official API to flip text d
 - 🎨 **Colorful code** — built-in offline syntax highlighting for 17+ languages, with a language badge and one-click **Copy**
 - 📖 **11 reading themes** — switch the preview template live: Auto · GitHub · Sepia · Nord · Dracula · One Dark · Solarized Light/Dark · Rosé Pine · Gruvbox · Monokai
 - 🧰 **Formatting toolbar** — bold, italic, headings, lists, checklists, links, tables & more (`Ctrl+B/I/K`)
+- 🤖 **AI prompt templates** — reusable, customizable templates you paste into **Claude Code** & **GitHub Copilot** chat
 - 🧭 **Live outline** — auto table of contents with click-to-scroll
 - 📊 **Status bar** — word, character & line counts + reading time
 
@@ -89,6 +90,7 @@ Use the toolbar to switch between **Edit**, **Split**, and **Preview**.
 | `rtlMarkdown.lineHeight` | `2` | Line height |
 | `rtlMarkdown.defaultMode` | `preview` | View on open: `edit`, `split`, or `preview` |
 | `rtlMarkdown.previewTheme` | `auto` | Reading theme: `auto`, `github`, `sepia`, `nord`, `dracula`, `one-dark`, `solarized-light`, `solarized-dark`, `rose-pine`, `gruvbox`, `monokai` (also switchable live from the toolbar) |
+| `rtlMarkdown.promptTemplates` | _6 starters_ | Your reusable AI prompt templates for Claude Code / Copilot chat (each `{ "name", "body" }`) |
 
 > 💡 For the best Persian/Arabic typography, install the free **[Vazirmatn](https://github.com/rastikerdar/vazirmatn)** font.
 
@@ -105,6 +107,17 @@ Use the toolbar to switch between **Edit**, **Split**, and **Preview**.
 | Copy a code block | **Copy** button on the block |
 | Open in RTL editor | Command Palette → **RTL Markdown: Open in RTL Editor** |
 | Open in plain text editor | Command Palette → **RTL Markdown: Open in Text Editor** |
+
+---
+
+## 🤖 Use with Claude Code & GitHub Copilot
+
+Qalam is built for developers who code with **Claude Code** or **GitHub Copilot** *and* write in right-to-left languages:
+
+- **AI prompt templates** — keep your favorite reusable prompts one click away. Open them from the status-bar **Prompts** button, the editor toolbar, or the command **`Qalam: Insert Prompt Template`**. The template is copied to your clipboard so you can paste it straight into the Claude Code or Copilot chat box (and it's inserted at the cursor if a text editor is focused). Edit your own set anytime via `rtlMarkdown.promptTemplates`.
+- **Auto-RTL for AI-generated docs** — any `.md` / `.markdown` / `.mdx` that Claude Code or Copilot generates opens **right-to-left automatically** in Qalam, properly aligned for Persian, Arabic, Hebrew, and Urdu.
+
+> ℹ️ VS Code renders each extension's chat inside a sandboxed webview, so no third-party extension can change the text direction *inside* the Claude Code / Copilot chat panel itself. Qalam gives you the prompt-template workflow above instead.
 
 ---
 

@@ -2,6 +2,17 @@
 
 All notable changes to the **Qalam — RTL Markdown Editor** extension are documented here.
 
+## [3.1.0]
+
+### Added
+- **🤖 Prompt templates for AI chat** — reusable, fully customizable prompt templates for use with **Claude Code** and **GitHub Copilot** chat. Open them from the new status-bar **Prompts** button, the **Qalam: Insert Prompt Template** command, or the **Prompts** button in the editor toolbar. The selected template is copied to the clipboard (and inserted at the cursor when a text editor is focused) so you can paste it straight into the chat box. Manage your own templates via the `rtlMarkdown.promptTemplates` setting.
+
+### Note
+- VS Code renders each extension's chat in a sandboxed webview, so a third-party extension **cannot** force RTL or inject UI directly inside the Claude Code / Copilot chat panels. Qalam instead provides the prompt-template workflow above, and any Markdown those tools generate opens right-to-left automatically in Qalam.
+
+### Changed
+- Repositioned and SEO-tuned the Marketplace title, description, and keywords for discoverability by Claude Code / GitHub Copilot users who write right-to-left.
+
 ## [3.0.0]
 
 ### Fixed

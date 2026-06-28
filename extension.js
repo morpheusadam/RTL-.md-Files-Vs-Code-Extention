@@ -8,6 +8,7 @@ const MD_PATTERNS = ['*.md', '*.markdown', '*.mdx'];
 const MD_RE = /\.(md|markdown|mdx)$/i;
 
 let statusBarItem;
+let promptStatusItem;
 
 function activate(context) {
   const provider = new RtlMarkdownEditorProvider(context);
@@ -42,12 +43,26 @@ function activate(context) {
     vscode.commands.registerCommand('rtlMarkdown.toggle', toggleRtl)
   );
 
+  // Prompt templates for AI chat (Claude Code / GitHub Copilot).
+  context.subscriptions.push(
+    vscode.commands.registerCommand('rtlMarkdown.promptTemplates', insertPromptTemplate),
+    vscode.commands.registerCommand('rtlMarkdown.editPromptTemplates', editPromptTemplates)
+  );
+
   // Status bar (footer) button.
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   statusBarItem.command = 'rtlMarkdown.toggle';
   context.subscriptions.push(statusBarItem);
   updateStatusBar();
   statusBarItem.show();
+
+  // Status bar button to insert a prompt template into AI chat.
+  promptStatusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+  promptStatusItem.text = '$(comment-discussion) Prompts';
+  promptStatusItem.tooltip = 'Qalam: insert a prompt template for Claude Code / GitHub Copilot chat';
+  promptStatusItem.command = 'rtlMarkdown.promptTemplates';
+  context.subscriptions.push(promptStatusItem);
+  promptStatusItem.show();
 
   // Keep the button in sync if the association changes elsewhere.
   context.subscriptions.push(
@@ -121,6 +136,46 @@ function resolveUri(uri) {
   return active ? active.document.uri : undefined;
 }
 
+// ── Prompt templates for AI chat (Claude Code / GitHub Copilot) ──
+function getPromptTemplates() {
+  const raw = vscode.workspace.getConfiguration('rtlMarkdown').get('promptTemplates');
+  if (Array.isArray(raw)) {
+    return raw.filter((t) => t && typeof t.name === 'string' && typeof t.body === 'string');
+  }
+  return [];
+}
+
+function previewLine(s) {
+  const line = String(s).replace(/\s+/g, ' ').trim();
+  return line.length > 80 ? line.slice(0, 79) + '…' : line;
+}
+
+async function insertPromptTemplate() {
+  const templates = getPromptTemplates();
+  const items = templates.map((t) => ({ label: t.name, detail: previewLine(t.body), body: t.body }));
+  items.push({ label: '$(gear) Edit templates…', detail: 'Open settings to add or change templates', body: null });
+  const pick = await vscode.window.showQuickPick(items, {
+    placeHolder: 'Pick a prompt template — it is copied so you can paste it into Claude Code / Copilot chat',
+    matchOnDetail: true
+  });
+  if (!pick) return;
+  if (pick.body === null) {
+    editPromptTemplates();
+    return;
+  }
+  await vscode.env.clipboard.writeText(pick.body);
+  // If a text editor is focused, also insert at the cursor as a convenience.
+  const ed = vscode.window.activeTextEditor;
+  if (ed) {
+    await ed.edit((b) => b.insert(ed.selection.active, pick.body));
+  }
+  vscode.window.setStatusBarMessage('$(check) Prompt copied — paste into chat with Ctrl/Cmd+V', 3000);
+}
+
+function editPromptTemplates() {
+  return vscode.commands.executeCommand('workbench.action.openSettings', 'rtlMarkdown.promptTemplates');
+}
+
 class RtlMarkdownEditorProvider {
   constructor(context) {
     this.context = context;
@@ -174,6 +229,9 @@ class RtlMarkdownEditorProvider {
         case 'openDefault':
           vscode.commands.executeCommand('vscode.openWith', document.uri, 'default');
           break;
+        case 'prompts':
+          vscode.commands.executeCommand('rtlMarkdown.promptTemplates');
+          break;
         case 'save':
           document.save();
           break;
@@ -218,7 +276,8 @@ class RtlMarkdownEditorProvider {
       split: '<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/>',
       preview: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
       list: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
-      open: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>'
+      open: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>',
+      chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'
     };
     const svg = (p, w) => `<svg viewBox="0 0 24 24" width="${w || 16}" height="${w || 16}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
     const fmt = (key, label, title) => `<button class="fmt" type="button" data-fmt="${key}" title="${title}">${label}</button>`;
@@ -241,6 +300,7 @@ class RtlMarkdownEditorProvider {
     </div>
     <span class="spacer"></span>
     <button id="toc-toggle" class="iconbtn" type="button" title="Table of contents">${svg(ICON.list)}<span>Contents</span></button>
+    <button id="prompts-btn" class="iconbtn" type="button" title="Prompt templates for Claude Code / Copilot chat">${svg(ICON.chat)}<span>Prompts</span></button>
     <label class="visually-hidden" for="theme-select">Reading theme</label>
     <select id="theme-select" class="theme-select" title="Reading theme">
       <option value="auto">🎨 Theme: Auto</option>

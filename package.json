@@ -1,8 +1,8 @@
 {
   "name": "qalam-rtl-markdown",
-  "displayName": "Qalam — RTL Markdown Editor",
-  "description": "The right-to-left Markdown editor for VS Code. Write and preview RTL documents with proper alignment, colorful syntax-highlighted code, beautiful reading themes, a live outline, and a formatting toolbar — purpose-built for Persian, Arabic, Hebrew, and Urdu.",
-  "version": "3.0.0",
+  "displayName": "Qalam — RTL Markdown Editor & AI Prompt Templates",
+  "description": "RTL Claude · Markdown · Copilot — the true right-to-left Markdown editor for VS Code, with reusable AI prompt templates. Write, preview and read RTL docs, READMEs and AI-generated notes in Persian, Arabic, Hebrew and Urdu: colorful syntax highlighting, 11 reading themes, a live outline, a formatting toolbar, and one-click prompt templates for Claude Code & GitHub Copilot chat. Markdown that AI tools generate opens right-to-left automatically.",
+  "version": "3.1.0",
   "publisher": "morpheusadam",
   "license": "MIT",
   "icon": "icon.png",
@@ -18,12 +18,23 @@
     "rtl",
     "markdown",
     "right-to-left",
+    "rtl editor",
+    "markdown preview",
     "persian",
     "farsi",
     "arabic",
     "hebrew",
     "urdu",
-    "bidi"
+    "bidi",
+    "claude",
+    "claude code",
+    "copilot",
+    "github copilot",
+    "ai",
+    "prompt",
+    "prompt templates",
+    "readme",
+    "documentation"
   ],
   "galleryBanner": {
     "color": "#4338CA",
@@ -72,6 +83,14 @@
       {
         "command": "rtlMarkdown.toggle",
         "title": "RTL Markdown: Toggle RTL Editor"
+      },
+      {
+        "command": "rtlMarkdown.promptTemplates",
+        "title": "Qalam: Insert Prompt Template (Claude Code / Copilot)"
+      },
+      {
+        "command": "rtlMarkdown.editPromptTemplates",
+        "title": "Qalam: Edit Prompt Templates"
       }
     ],
     "menus": {
@@ -149,6 +168,32 @@
           ],
           "default": "auto",
           "description": "Reading theme for the rendered preview. Can also be changed live from the toolbar."
+        },
+        "rtlMarkdown.promptTemplates": {
+          "type": "array",
+          "markdownDescription": "Reusable prompt templates for AI chat (Claude Code, GitHub Copilot). Pick one from the status-bar **Prompts** button or the command **Qalam: Insert Prompt Template** — it is copied to the clipboard so you can paste it into the chat box (and inserted at the cursor if a text editor is focused).",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Template name shown in the picker."
+              },
+              "body": {
+                "type": "string",
+                "description": "The prompt text that gets copied and inserted."
+              }
+            },
+            "required": ["name", "body"]
+          },
+          "default": [
+            { "name": "Explain code", "body": "این کد را خط‌به‌خط و ساده توضیح بده:\n\n" },
+            { "name": "Refactor & clean up", "body": "این کد را تمیزتر و خواناتر بازنویسی کن و دلیل هر تغییر را کوتاه توضیح بده:\n\n" },
+            { "name": "Find bugs & security issues", "body": "در این کد دنبال باگ و مشکلات امنیتی بگرد و برای هرکدام راه‌حل بده:\n\n" },
+            { "name": "Write tests", "body": "برای این کد تست بنویس و موارد لبه‌ای را هم پوشش بده:\n\n" },
+            { "name": "Commit message", "body": "برای این تغییرات یک پیام کامیت کوتاه و واضح به انگلیسی بنویس:\n\n" },
+            { "name": "Translate to English", "body": "متن زیر را به انگلیسیِ روان و حرفه‌ای ترجمه کن:\n\n" }
+          ]
         }
       }
     }

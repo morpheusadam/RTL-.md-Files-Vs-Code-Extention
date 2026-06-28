@@ -200,6 +200,8 @@
   });
   const tocBtn = document.getElementById('toc-toggle');
   if (tocBtn) tocBtn.addEventListener('click', () => setToc(!tocOpen));
+  const promptsBtn = document.getElementById('prompts-btn');
+  if (promptsBtn) promptsBtn.addEventListener('click', () => vscode.postMessage({ type: 'prompts' }));
   if (themeSelect) themeSelect.addEventListener('change', () => applyTheme(themeSelect.value));
 
   /* ── Outline navigation ── */
