@@ -3,3 +3,6 @@
 .gitignore
 **/*.map
 node_modules/**
+_rtltest/**
+test/**
+*.vsix

@@ -1,6 +1,17 @@
 # Change Log
 
-All notable changes to the **Qalam — RTL Markdown Editor** extension are documented here.
+All notable changes to the **Master RTL** extension are documented here.
+
+## [3.2.0] — Master RTL 🎉
+
+### Rebrand
+- The extension is now **Master RTL — RTL for Claude Code, Markdown & AI Chat**, refocused around its headline feature: making the Claude Code chat panel right-to-left. (Same extension, settings, and `rtlMarkdown.*` commands as before.)
+
+### Added
+- **🤖 Right-to-left Claude Code chat** — Qalam can now flip the **Claude Code** chat panel to right-to-left. Persian, Arabic, Hebrew and Urdu read naturally **RTL**, while English text and code blocks stay **LTR** (each block's direction is auto-detected from its own content with `unicode-bidi: plaintext`, so nothing English or code-related is disturbed). Turn it on/off from the new status-bar **Claude RTL** button or the command **Qalam: RTL for Claude Code**, or via the `rtlMarkdown.claudeCodeRtl` setting (on by default). A **window reload** applies the change.
+
+### How it works
+- Claude Code renders its chat inside a sandboxed webview, so no extension can reach into it from the outside. Qalam adds a single, clearly-marked, fully reversible stylesheet block to Claude Code's *own* webview CSS. The block is re-applied automatically after Claude Code updates, and Qalam removes it cleanly when you turn the feature off. (This supersedes the note in 3.1.0 — it **is** possible, by patching Claude Code's own stylesheet rather than from the outside.)
 
 ## [3.1.0]
 

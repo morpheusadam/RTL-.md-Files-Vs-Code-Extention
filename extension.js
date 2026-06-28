@@ -2,13 +2,62 @@
 // Written in plain JavaScript so it runs without a build step.
 
 const vscode = require('vscode');
+const fs = require('fs');
+const path = require('path');
 
 const VIEW_TYPE = 'rtlMarkdown.editor';
 const MD_PATTERNS = ['*.md', '*.markdown', '*.mdx'];
 const MD_RE = /\.(md|markdown|mdx)$/i;
 
+// ── Claude Code RTL patch ────────────────────────────────────────────────────
+// Claude Code renders its chat inside a sandboxed webview, so no extension can
+// reach into it from the outside. The only way to flip it right-to-left is to
+// add a stylesheet to Claude Code's *own* webview CSS. We append a single,
+// clearly-marked, fully reversible block to its `webview/index.css`. The block
+// uses `unicode-bidi: plaintext`, so each paragraph's direction is auto-detected
+// from its content: Persian/Arabic/Hebrew/Urdu read right-to-left while English
+// text and code blocks stay left-to-right — no layout is broken.
+const CC_EXT_ID = 'anthropic.claude-code';
+const CC_CSS_REL = path.join('webview', 'index.css');
+const CC_RTL_START = '/* ===== QALAM-RTL-CLAUDE-CODE:START';
+const CC_RTL_END = 'QALAM-RTL-CLAUDE-CODE:END ===== */';
+// Matches our whole block (with surrounding blank lines) so we can strip/replace it.
+const CC_RTL_BLOCK_RE = /\n*\/\* =====[ ]QALAM-RTL-CLAUDE-CODE:START[\s\S]*?QALAM-RTL-CLAUDE-CODE:END ===== \*\/\n*/g;
+
+function claudeRtlBlock() {
+  return `
+
+/* ===== QALAM-RTL-CLAUDE-CODE:START =====
+   Added by the "Qalam — RTL Markdown" extension (setting: rtlMarkdown.claudeCodeRtl).
+   Makes Claude Code's chat read right-to-left for Persian / Arabic / Hebrew / Urdu,
+   while English text and code blocks stay left-to-right. Each block's direction is
+   auto-detected from its own content via unicode-bidi:plaintext, so nothing English
+   or code-related is disturbed. This whole block is safe to delete, and Qalam can
+   remove it for you with the "Qalam: RTL for Claude Code" toggle. */
+[class*="message_"] :is(p,li,h1,h2,h3,h4,h5,h6,blockquote,dd,dt,td,th,figcaption,summary) {
+  unicode-bidi: plaintext;
+  text-align: start;
+  align-self: stretch;
+}
+[class*="message_"] :is(ul,ol) { unicode-bidi: plaintext; }
+[class*="message_"] li { list-style-position: inside; }
+[class*="messageInput_"],
+[class*="messageInput_"] > p,
+[class*="messageInput_"] > div { unicode-bidi: plaintext; text-align: start; }
+[class*="message_"] :is(pre,code,kbd,samp,.monaco-editor),
+[class*="message_"] :is(pre,code,kbd,samp,.monaco-editor) * {
+  unicode-bidi: normal;
+  direction: ltr;
+  text-align: left;
+}
+[class*="message_"] :not(pre) > code { unicode-bidi: isolate; }
+/* ===== QALAM-RTL-CLAUDE-CODE:END ===== */
+`;
+}
+
 let statusBarItem;
 let promptStatusItem;
+let claudeRtlStatusItem;
 
 function activate(context) {
   const provider = new RtlMarkdownEditorProvider(context);
@@ -49,6 +98,11 @@ function activate(context) {
     vscode.commands.registerCommand('rtlMarkdown.editPromptTemplates', editPromptTemplates)
   );
 
+  // Claude Code RTL toggle.
+  context.subscriptions.push(
+    vscode.commands.registerCommand('rtlMarkdown.toggleClaudeRtl', toggleClaudeRtl)
+  );
+
   // Status bar (footer) button.
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   statusBarItem.command = 'rtlMarkdown.toggle';
@@ -64,11 +118,25 @@ function activate(context) {
   context.subscriptions.push(promptStatusItem);
   promptStatusItem.show();
 
-  // Keep the button in sync if the association changes elsewhere.
+  // Status bar button to toggle right-to-left Claude Code chat.
+  claudeRtlStatusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 99);
+  claudeRtlStatusItem.command = 'rtlMarkdown.toggleClaudeRtl';
+  context.subscriptions.push(claudeRtlStatusItem);
+  updateClaudeRtlStatus();
+  claudeRtlStatusItem.show();
+
+  // Apply the Claude Code RTL patch on startup if the setting is enabled. This
+  // also re-applies after Claude Code updates (which reset its files).
+  applyClaudeRtlOnStartup();
+
+  // Keep the buttons in sync if settings change elsewhere.
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('workbench.editorAssociations')) {
         updateStatusBar();
+      }
+      if (e.affectsConfiguration('rtlMarkdown.claudeCodeRtl')) {
+        updateClaudeRtlStatus();
       }
     })
   );
@@ -174,6 +242,119 @@ async function insertPromptTemplate() {
 
 function editPromptTemplates() {
   return vscode.commands.executeCommand('workbench.action.openSettings', 'rtlMarkdown.promptTemplates');
+}
+
+// ── Claude Code RTL: locate + patch its webview stylesheet ──
+// Returns the absolute path(s) to Claude Code's `webview/index.css`, or [].
+function findClaudeCssPaths() {
+  const paths = new Set();
+
+  // Preferred: ask VS Code where the installed extension lives.
+  const ext = vscode.extensions.getExtension(CC_EXT_ID);
+  if (ext && ext.extensionPath) {
+    paths.add(path.join(ext.extensionPath, CC_CSS_REL));
+  }
+
+  // Fallback: scan the extensions folder for anthropic.claude-code-* (covers
+  // platform-specific folder names and the case where the API hasn't seen it yet).
+  try {
+    const guess = ext && ext.extensionPath
+      ? path.dirname(ext.extensionPath)
+      : path.join(require('os').homedir(), '.vscode', 'extensions');
+    for (const name of fs.readdirSync(guess)) {
+      if (/^anthropic\.claude-code-/i.test(name)) {
+        paths.add(path.join(guess, name, CC_CSS_REL));
+      }
+    }
+  } catch (_) { /* extensions dir not found — ignore */ }
+
+  return [...paths].filter((p) => {
+    try { return fs.statSync(p).isFile(); } catch (_) { return false; }
+  });
+}
+
+function claudeRtlIsApplied() {
+  const files = findClaudeCssPaths();
+  if (files.length === 0) return false;
+  return files.every((p) => {
+    try { return fs.readFileSync(p, 'utf8').includes(CC_RTL_END); } catch (_) { return false; }
+  });
+}
+
+// Writes (or removes) our block. `enable` true = add/refresh, false = remove.
+// Returns { changed, files, found, error }. Idempotent: rewrites only when needed.
+function setClaudeRtl(enable) {
+  const files = findClaudeCssPaths();
+  if (files.length === 0) {
+    return { changed: 0, files: 0, found: false, error: null };
+  }
+  let changed = 0;
+  let error = null;
+  for (const p of files) {
+    try {
+      const original = fs.readFileSync(p, 'utf8');
+      const stripped = original.replace(CC_RTL_BLOCK_RE, '\n');
+      const next = enable ? stripped.replace(/\s*$/, '\n') + claudeRtlBlock() : stripped;
+      if (next !== original) {
+        fs.writeFileSync(p, next, 'utf8');
+        changed++;
+      }
+    } catch (e) {
+      error = e;
+    }
+  }
+  return { changed, files: files.length, found: true, error };
+}
+
+// Apply silently on startup when the setting is on (best-effort; never throws).
+function applyClaudeRtlOnStartup() {
+  try {
+    const on = vscode.workspace.getConfiguration('rtlMarkdown').get('claudeCodeRtl');
+    if (on) setClaudeRtl(true);
+  } catch (_) { /* ignore */ }
+  updateClaudeRtlStatus();
+}
+
+async function toggleClaudeRtl() {
+  const cfg = vscode.workspace.getConfiguration('rtlMarkdown');
+  const next = !cfg.get('claudeCodeRtl');
+  const res = setClaudeRtl(next);
+  await cfg.update('claudeCodeRtl', next, vscode.ConfigurationTarget.Global);
+  updateClaudeRtlStatus();
+
+  if (!res.found) {
+    vscode.window.showWarningMessage(
+      'Qalam: Claude Code is not installed, so there is nothing to make right-to-left. The setting was saved and will apply once Claude Code is installed.'
+    );
+    return;
+  }
+  if (res.error) {
+    vscode.window.showErrorMessage(
+      `Qalam: couldn't update Claude Code's stylesheet (${res.error.code || res.error.message}). It may be read-only or in use.`
+    );
+    return;
+  }
+  if (!next) {
+    vscode.window.showInformationMessage('Qalam: Claude Code RTL turned off. Reload to restore the original layout.', 'Reload Window')
+      .then((c) => { if (c) vscode.commands.executeCommand('workbench.action.reloadWindow'); });
+    return;
+  }
+  const pick = await vscode.window.showInformationMessage(
+    'Qalam: Claude Code chat is now right-to-left. Reload the window to see it.',
+    'Reload Window'
+  );
+  if (pick === 'Reload Window') {
+    vscode.commands.executeCommand('workbench.action.reloadWindow');
+  }
+}
+
+function updateClaudeRtlStatus() {
+  if (!claudeRtlStatusItem) return;
+  const on = vscode.workspace.getConfiguration('rtlMarkdown').get('claudeCodeRtl');
+  claudeRtlStatusItem.text = on ? '$(comment-discussion) Claude RTL' : '$(comment-discussion) Claude RTL: off';
+  claudeRtlStatusItem.tooltip = on
+    ? 'Claude Code chat is set to right-to-left (Persian/Arabic/Hebrew/Urdu read RTL; English & code stay LTR).\nClick to turn off. A window reload applies changes.'
+    : 'Claude Code chat is left-to-right.\nClick to make it right-to-left. A window reload applies changes.';
 }
 
 class RtlMarkdownEditorProvider {
@@ -375,4 +556,13 @@ function getNonce() {
 module.exports = {
   activate,
   deactivate() {}
+};
+
+// Exposed only for the offline test harness; unused inside VS Code at runtime.
+module.exports.__test__ = {
+  setClaudeRtl,
+  findClaudeCssPaths,
+  claudeRtlIsApplied,
+  claudeRtlBlock,
+  CC_RTL_BLOCK_RE
 };
