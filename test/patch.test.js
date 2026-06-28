@@ -47,8 +47,9 @@ require.cache['vscode'] = { id: 'vscode', filename: 'vscode', loaded: true, expo
   window: {}, commands: {}, ConfigurationTarget: { Global: 1 }
 }};
 
-const { setClaudeRtl, findClaudeCssPaths, claudeRtlIsApplied, CC_RTL_BLOCK_RE } =
-  require(path.join(__dirname, '..', 'extension.js')).__test__;
+const __t = require(path.join(__dirname, '..', 'extension.js')).__test__;
+const { setClaudeRtl, findClaudeCssPaths, claudeRtlIsApplied, CC_RTL_BLOCK_RE,
+        patchClaudeFiles, claudeTemplatesBlock, CC_TPL_BLOCK_RE } = __t;
 
 let failures = 0;
 const check = (name, ok) => { console.log((ok ? '  PASS  ' : '  FAIL  ') + name); if (!ok) failures++; };
@@ -76,6 +77,39 @@ check('remove: restored to original', a3.trimEnd() === ORIGINAL.trimEnd());
 
 setClaudeRtl(true);
 check('regex strips block cleanly', count(read().replace(CC_RTL_BLOCK_RE, '\n'), 'QALAM-RTL-CLAUDE-CODE') === 0);
+
+// ── Prompt-templates patch (webview/index.js) ──
+console.log('\nPrompt-templates button patch (webview/index.js):');
+const jsPath = path.join(extDir, 'webview', 'index.js');
+const ORIG_JS = 'var x=1;try{boot()}catch(e){log(e)}';
+fs.writeFileSync(jsPath, ORIG_JS, 'utf8');
+const TPLS = [
+  { name: 'Explain', body: 'این کد را توضیح بده:\n\n' },
+  // nasty body: closing-script sequence, backticks, ${}, quotes, backslash
+  { name: 'Tricky', body: 'x = `a${b}` </' + 'script> "q" \\ end' }
+];
+const readJs = () => fs.readFileSync(jsPath, 'utf8');
+const block = claudeTemplatesBlock(TPLS);
+
+const j1 = patchClaudeFiles([jsPath], CC_TPL_BLOCK_RE, block);
+check('tpl apply: one change, no error', j1.changed === 1 && j1.error === null);
+check('tpl apply: original JS kept as prefix', readJs().startsWith(ORIG_JS));
+check('tpl apply: one block', count(readJs(), 'QALAM-CC-TEMPLATES:END') === 1);
+check('tpl apply: injected IIFE is valid JS', (() => { try { new Function(block); return true; } catch (_) { return false; } })());
+check('tpl apply: whole bundle still parses (safe append)', (() => { try { new Function(readJs()); return true; } catch (_) { return false; } })());
+check('tpl apply: nasty body baked in & escaped', readJs().includes('</' + 'script>'));
+
+const j2 = patchClaudeFiles([jsPath], CC_TPL_BLOCK_RE, claudeTemplatesBlock(TPLS));
+check('tpl idempotent: no second write', j2.changed === 0);
+check('tpl idempotent: still one block', count(readJs(), 'QALAM-CC-TEMPLATES:END') === 1);
+
+patchClaudeFiles([jsPath], CC_TPL_BLOCK_RE, null);
+check('tpl remove: no marker remains', count(readJs(), 'QALAM-CC-TEMPLATES') === 0);
+check('tpl remove: restored to original', readJs().trimEnd() === ORIG_JS.trimEnd());
+
+// ── No-install handling ──
+const none = patchClaudeFiles([], CC_RTL_BLOCK_RE, null);
+check('no Claude Code installed → found:false, no writes', none.found === false && none.changed === 0);
 
 fs.rmSync(tmpRoot, { recursive: true, force: true });
 console.log('\n' + (failures === 0 ? 'ALL TESTS PASSED ✓' : failures + ' TEST(S) FAILED'));

@@ -2,6 +2,18 @@
 
 All notable changes to the **Master RTL** extension are documented here.
 
+## [3.3.0]
+
+### Added
+- **📋 Prompt-templates button inside Claude Code** — Master RTL can now place a small **templates button** directly in the **Claude Code** chat input. Click it to drop any of your `rtlMarkdown.promptTemplates` straight into the chat box — no copy/paste. The button stays in sync whenever you edit your templates and re-applies automatically after Claude Code updates. Toggle it with **Master RTL: Prompt-Templates Button in Claude Code**, or the `rtlMarkdown.claudeCodeTemplates` setting (on by default). A **window reload** applies the change.
+- **📨 Send Prompt Template to Claude Code** — a new command, **Master RTL: Send Prompt Template to Claude Code**, that copies your chosen template, opens and focuses the Claude Code chat, and — when Claude is running in a **terminal** — types the prompt straight in. In the native chat UI it focuses the input so you only need a single `Ctrl/Cmd+V`.
+
+### How it works
+- The templates button is added by appending a small, clearly-marked, fully reversible script to Claude Code's *own* webview bundle (the same patch approach as the RTL feature). It runs entirely offline, is wrapped in a `try/catch` so it can never break Claude Code, and is removed cleanly when you turn the feature off.
+
+### Tested
+- 24 offline assertions (`npm test`) cover applying, idempotency, clean removal, and bundle-safety of both the RTL and templates patches — run against the real Claude Code stylesheet when it's installed. The injected templates button (render, menu, insertion, special-character escaping) was verified in a headless Chromium harness.
+
 ## [3.2.0] — Master RTL 🎉
 
 ### Rebrand

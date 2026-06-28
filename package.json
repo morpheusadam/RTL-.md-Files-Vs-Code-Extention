@@ -1,8 +1,8 @@
 {
   "name": "qalam-rtl-markdown",
   "displayName": "Master RTL — RTL for Claude Code, Markdown & AI Chat",
-  "description": "Master RTL makes Claude Code, Markdown and AI chat truly right-to-left in VS Code. Read & write Persian (فارسی), Arabic (العربية), Hebrew (עברית) and Urdu (اردو) naturally: one-click RTL for the Claude Code chat panel, a real RTL Markdown editor with live preview, 11 reading themes, colorful code highlighting, a live outline, a formatting toolbar and reusable AI prompt templates. English and code stay left-to-right automatically.",
-  "version": "3.2.0",
+  "description": "Master RTL makes Claude Code, Markdown and AI chat truly right-to-left in VS Code. Read & write Persian (فارسی), Arabic (العربية), Hebrew (עברית) and Urdu (اردو) naturally: one-click RTL for the Claude Code chat panel, a prompt-templates button inside Claude Code itself, a real RTL Markdown editor with live preview, 11 reading themes, colorful code highlighting, a live outline, a formatting toolbar and reusable AI prompt templates. English and code stay left-to-right automatically.",
+  "version": "3.3.0",
   "publisher": "morpheusadam",
   "license": "MIT",
   "icon": "icon.png",
@@ -110,6 +110,14 @@
       {
         "command": "rtlMarkdown.toggleClaudeRtl",
         "title": "Master RTL: Right-to-Left for Claude Code (toggle)"
+      },
+      {
+        "command": "rtlMarkdown.toggleClaudeTemplates",
+        "title": "Master RTL: Prompt-Templates Button in Claude Code (toggle)"
+      },
+      {
+        "command": "rtlMarkdown.sendTemplateToClaude",
+        "title": "Master RTL: Send Prompt Template to Claude Code"
       }
     ],
     "menus": {
@@ -134,7 +142,12 @@
         "rtlMarkdown.claudeCodeRtl": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Make the **Claude Code** chat panel right-to-left. Qalam adds a small, clearly-marked, fully reversible stylesheet block to Claude Code's own webview CSS so Persian/Arabic/Hebrew/Urdu read right-to-left, while English text and code blocks stay left-to-right. Reapplies automatically after Claude Code updates. **A window reload is required** for changes to take effect. Toggle live from the status-bar **Claude RTL** button or the command **Qalam: RTL for Claude Code**."
+          "markdownDescription": "Make the **Claude Code** chat panel right-to-left. Master RTL adds a small, clearly-marked, fully reversible stylesheet block to Claude Code's own webview CSS so Persian/Arabic/Hebrew/Urdu read right-to-left, while English text and code blocks stay left-to-right. Reapplies automatically after Claude Code updates. **A window reload is required** for changes to take effect. Toggle live from the status-bar **Claude RTL** button or the command **Master RTL: Right-to-Left for Claude Code**."
+        },
+        "rtlMarkdown.claudeCodeTemplates": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Add a **prompt-templates button** directly inside the **Claude Code** chat input. Master RTL injects a small, clearly-marked, fully reversible script into Claude Code's own webview; clicking the button drops your chosen template from `#rtlMarkdown.promptTemplates#` straight into the chat box. The button stays in sync whenever you edit your templates, and reapplies automatically after Claude Code updates. **A window reload is required** for changes to take effect. Toggle with the command **Master RTL: Prompt-Templates Button in Claude Code**."
         },
         "rtlMarkdown.fontFamily": {
           "type": "string",

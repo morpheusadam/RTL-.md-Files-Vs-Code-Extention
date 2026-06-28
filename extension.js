@@ -55,6 +55,80 @@ function claudeRtlBlock() {
 `;
 }
 
+// ── Claude Code prompt-templates button (injected into its webview) ───────────
+// We append a small, self-contained, try/catch-guarded script to Claude Code's
+// own `webview/index.js`. Running inside the webview, it adds a "templates"
+// button next to the chat input; clicking it inserts the chosen prompt straight
+// into Claude Code's editor. The user's templates are baked into the script, so
+// it needs no network or settings access. The whole block is marker-guarded and
+// fully reversible, and any error is swallowed so Claude Code can never break.
+const CC_JS_REL = path.join('webview', 'index.js');
+const CC_TPL_END = 'QALAM-CC-TEMPLATES:END */';
+// Leading `;?` matches the ASI-safety semicolon the block starts with, so the
+// block is stripped cleanly (idempotent apply, clean removal).
+const CC_TPL_BLOCK_RE = /\n*;?\/\* QALAM-CC-TEMPLATES:START[\s\S]*?QALAM-CC-TEMPLATES:END \*\/\n*/g;
+
+function claudeTemplatesBlock(templates) {
+  const data = JSON.stringify(
+    (Array.isArray(templates) ? templates : [])
+      .filter((t) => t && typeof t.name === 'string' && typeof t.body === 'string')
+      .map((t) => ({ name: t.name, body: t.body }))
+  );
+  // The injected IIFE. Kept dependency-free and defensive.
+  return `
+;/* QALAM-CC-TEMPLATES:START — added by "Qalam — RTL Markdown" (rtlMarkdown.claudeCodeTemplates). Safe to delete. */
+(function(){try{
+  var T=${data};
+  if(!Array.isArray(T)||!T.length)return;
+  var BTN="qalam-tpl-btn",MENU="qalam-tpl-menu";
+  function input(){return document.querySelector('[class*="messageInput_"]');}
+  function anchor(){return document.querySelector('[class*="messageInputContainer_"]')||(input()&&input().parentElement);}
+  function styles(){
+    if(document.getElementById("qalam-tpl-style"))return;
+    var s=document.createElement("style");s.id="qalam-tpl-style";
+    s.textContent=
+    '.'+BTN+'{position:absolute;top:5px;inset-inline-start:5px;z-index:5;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;border-radius:6px;background:var(--vscode-button-secondaryBackground,rgba(127,127,127,.16));color:var(--vscode-foreground,#ddd);cursor:pointer;font-size:13px;line-height:1;opacity:.65;padding:0}'+
+    '.'+BTN+':hover{opacity:1;background:var(--vscode-button-secondaryHoverBackground,rgba(127,127,127,.3))}'+
+    '.'+MENU+'{position:fixed;z-index:99999;min-width:200px;max-width:340px;max-height:50vh;overflow:auto;background:var(--vscode-menu-background,var(--vscode-editorWidget-background,#252526));color:var(--vscode-menu-foreground,var(--vscode-foreground,#ddd));border:1px solid var(--vscode-menu-border,var(--vscode-editorWidget-border,#454545));border-radius:8px;box-shadow:0 6px 22px rgba(0,0,0,.4);padding:4px}'+
+    '.'+MENU+' button{display:block;width:100%;text-align:start;background:none;border:none;color:inherit;padding:6px 10px;border-radius:5px;cursor:pointer;font:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;unicode-bidi:plaintext}'+
+    '.'+MENU+' button:hover{background:var(--vscode-menu-selectionBackground,var(--vscode-list-activeSelectionBackground,#04395e))}';
+    document.head.appendChild(s);
+  }
+  function insert(text){
+    var el=input();if(!el)return false;el.focus();
+    try{var sel=window.getSelection(),r=document.createRange();r.selectNodeContents(el);r.collapse(false);sel.removeAllRanges();sel.addRange(r);}catch(e){}
+    var ok=false;try{ok=document.execCommand("insertText",false,text);}catch(e){}
+    if(!ok){try{el.dispatchEvent(new InputEvent("beforeinput",{inputType:"insertText",data:text,bubbles:true,cancelable:true}));el.dispatchEvent(new InputEvent("input",{inputType:"insertText",data:text,bubbles:true}));ok=true;}catch(e){}}
+    return ok;
+  }
+  function close(){var m=document.getElementById(MENU);if(m)m.remove();}
+  function open(btn){
+    close();var m=document.createElement("div");m.id=MENU;m.className=MENU;
+    T.forEach(function(t){var b=document.createElement("button");b.type="button";b.textContent=t.name;b.title=(t.body||"").replace(/\\s+/g," ").slice(0,120);
+      b.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();insert(t.body||"");cleanup();});m.appendChild(b);});
+    document.body.appendChild(m);
+    var r=btn.getBoundingClientRect();m.style.insetInlineStart=r.left+"px";m.style.bottom=(window.innerHeight-r.top+6)+"px";
+    function onDoc(e){if(!m.contains(e.target)&&e.target!==btn)cleanup();}
+    function onKey(e){if(e.key==="Escape")cleanup();}
+    function cleanup(){close();document.removeEventListener("mousedown",onDoc,true);document.removeEventListener("keydown",onKey,true);}
+    setTimeout(function(){document.addEventListener("mousedown",onDoc,true);document.addEventListener("keydown",onKey,true);},0);
+  }
+  function ensure(){
+    if(document.getElementById(BTN))return;
+    var a=anchor();if(!a)return;styles();
+    try{if(getComputedStyle(a).position==="static")a.style.position="relative";}catch(e){}
+    var btn=document.createElement("button");btn.id=BTN;btn.type="button";btn.className=BTN;btn.title="Qalam — prompt templates";btn.textContent="\\uD83D\\uDCCB";
+    btn.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();if(document.getElementById(MENU))close();else open(btn);});
+    a.appendChild(btn);
+  }
+  var obs=new MutationObserver(function(){try{ensure();}catch(e){}});
+  function start(){try{ensure();}catch(e){}try{obs.observe(document.body,{childList:true,subtree:true});}catch(e){}}
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);else start();
+}catch(e){/* never break Claude Code */}})();
+/* QALAM-CC-TEMPLATES:END */
+`;
+}
+
 let statusBarItem;
 let promptStatusItem;
 let claudeRtlStatusItem;
@@ -98,9 +172,11 @@ function activate(context) {
     vscode.commands.registerCommand('rtlMarkdown.editPromptTemplates', editPromptTemplates)
   );
 
-  // Claude Code RTL toggle.
+  // Claude Code integration: RTL toggle, templates-button toggle, smart send.
   context.subscriptions.push(
-    vscode.commands.registerCommand('rtlMarkdown.toggleClaudeRtl', toggleClaudeRtl)
+    vscode.commands.registerCommand('rtlMarkdown.toggleClaudeRtl', toggleClaudeRtl),
+    vscode.commands.registerCommand('rtlMarkdown.toggleClaudeTemplates', toggleClaudeTemplates),
+    vscode.commands.registerCommand('rtlMarkdown.sendTemplateToClaude', sendTemplateToClaude)
   );
 
   // Status bar (footer) button.
@@ -125,9 +201,9 @@ function activate(context) {
   updateClaudeRtlStatus();
   claudeRtlStatusItem.show();
 
-  // Apply the Claude Code RTL patch on startup if the setting is enabled. This
-  // also re-applies after Claude Code updates (which reset its files).
-  applyClaudeRtlOnStartup();
+  // Apply the Claude Code patches (RTL + templates button) on startup per their
+  // settings. This also re-applies after Claude Code updates, which reset its files.
+  applyClaudePatchesOnStartup();
 
   // Keep the buttons in sync if settings change elsewhere.
   context.subscriptions.push(
@@ -135,8 +211,13 @@ function activate(context) {
       if (e.affectsConfiguration('workbench.editorAssociations')) {
         updateStatusBar();
       }
-      if (e.affectsConfiguration('rtlMarkdown.claudeCodeRtl')) {
+      if (e.affectsConfiguration('rtlMarkdown.claudeCodeRtl') ||
+          e.affectsConfiguration('rtlMarkdown.claudeCodeTemplates')) {
         updateClaudeRtlStatus();
+      }
+      // Re-bake the in-Claude templates button whenever the user edits templates.
+      if (e.affectsConfiguration('rtlMarkdown.promptTemplates')) {
+        refreshClaudeTemplatesIfOn();
       }
     })
   );
@@ -244,15 +325,16 @@ function editPromptTemplates() {
   return vscode.commands.executeCommand('workbench.action.openSettings', 'rtlMarkdown.promptTemplates');
 }
 
-// ── Claude Code RTL: locate + patch its webview stylesheet ──
-// Returns the absolute path(s) to Claude Code's `webview/index.css`, or [].
-function findClaudeCssPaths() {
+// ── Claude Code patching: locate + safely modify its webview assets ──
+// Returns the absolute path(s) to a file (relative to the extension root) inside
+// every installed Claude Code, e.g. findClaudeFiles('webview/index.css').
+function findClaudeFiles(rel) {
   const paths = new Set();
 
   // Preferred: ask VS Code where the installed extension lives.
   const ext = vscode.extensions.getExtension(CC_EXT_ID);
   if (ext && ext.extensionPath) {
-    paths.add(path.join(ext.extensionPath, CC_CSS_REL));
+    paths.add(path.join(ext.extensionPath, rel));
   }
 
   // Fallback: scan the extensions folder for anthropic.claude-code-* (covers
@@ -263,7 +345,7 @@ function findClaudeCssPaths() {
       : path.join(require('os').homedir(), '.vscode', 'extensions');
     for (const name of fs.readdirSync(guess)) {
       if (/^anthropic\.claude-code-/i.test(name)) {
-        paths.add(path.join(guess, name, CC_CSS_REL));
+        paths.add(path.join(guess, name, rel));
       }
     }
   } catch (_) { /* extensions dir not found — ignore */ }
@@ -273,28 +355,18 @@ function findClaudeCssPaths() {
   });
 }
 
-function claudeRtlIsApplied() {
-  const files = findClaudeCssPaths();
-  if (files.length === 0) return false;
-  return files.every((p) => {
-    try { return fs.readFileSync(p, 'utf8').includes(CC_RTL_END); } catch (_) { return false; }
-  });
-}
-
-// Writes (or removes) our block. `enable` true = add/refresh, false = remove.
-// Returns { changed, files, found, error }. Idempotent: rewrites only when needed.
-function setClaudeRtl(enable) {
-  const files = findClaudeCssPaths();
-  if (files.length === 0) {
-    return { changed: 0, files: 0, found: false, error: null };
-  }
+// Core patcher: in each file, strip any previous block matching `blockRe`, then
+// append `blockText` when given (null = remove only). Idempotent — only writes
+// when the content actually changes. Returns { changed, files, found, error }.
+function patchClaudeFiles(files, blockRe, blockText) {
+  if (files.length === 0) return { changed: 0, files: 0, found: false, error: null };
   let changed = 0;
   let error = null;
   for (const p of files) {
     try {
       const original = fs.readFileSync(p, 'utf8');
-      const stripped = original.replace(CC_RTL_BLOCK_RE, '\n');
-      const next = enable ? stripped.replace(/\s*$/, '\n') + claudeRtlBlock() : stripped;
+      const stripped = original.replace(blockRe, '\n');
+      const next = blockText ? stripped.replace(/\s*$/, '\n') + blockText : stripped;
       if (next !== original) {
         fs.writeFileSync(p, next, 'utf8');
         changed++;
@@ -306,13 +378,66 @@ function setClaudeRtl(enable) {
   return { changed, files: files.length, found: true, error };
 }
 
-// Apply silently on startup when the setting is on (best-effort; never throws).
-function applyClaudeRtlOnStartup() {
-  try {
-    const on = vscode.workspace.getConfiguration('rtlMarkdown').get('claudeCodeRtl');
-    if (on) setClaudeRtl(true);
-  } catch (_) { /* ignore */ }
+// RTL stylesheet patch (webview/index.css).
+function setClaudeRtl(enable) {
+  return patchClaudeFiles(findClaudeFiles(CC_CSS_REL), CC_RTL_BLOCK_RE, enable ? claudeRtlBlock() : null);
+}
+
+// Thin convenience wrappers (also used by the offline test harness).
+function findClaudeCssPaths() {
+  return findClaudeFiles(CC_CSS_REL);
+}
+function claudeRtlIsApplied() {
+  const files = findClaudeCssPaths();
+  if (files.length === 0) return false;
+  return files.every((p) => {
+    try { return fs.readFileSync(p, 'utf8').includes(CC_RTL_END); } catch (_) { return false; }
+  });
+}
+
+// Prompt-templates button patch (webview/index.js). Always re-bakes the current
+// templates so the in-Claude button stays in sync with the user's settings.
+function setClaudeTemplates(enable) {
+  const block = enable ? claudeTemplatesBlock(getPromptTemplates()) : null;
+  return patchClaudeFiles(findClaudeFiles(CC_JS_REL), CC_TPL_BLOCK_RE, block);
+}
+
+// Apply both patches silently on startup per their settings (best-effort; never
+// throws). Also re-applies after Claude Code updates, which reset its files.
+function applyClaudePatchesOnStartup() {
+  const cfg = vscode.workspace.getConfiguration('rtlMarkdown');
+  try { if (cfg.get('claudeCodeRtl')) setClaudeRtl(true); } catch (_) { /* ignore */ }
+  try { if (cfg.get('claudeCodeTemplates')) setClaudeTemplates(true); } catch (_) { /* ignore */ }
   updateClaudeRtlStatus();
+}
+
+// Re-bake the templates block when the user's templates change (if enabled).
+function refreshClaudeTemplatesIfOn() {
+  try {
+    if (vscode.workspace.getConfiguration('rtlMarkdown').get('claudeCodeTemplates')) {
+      const res = setClaudeTemplates(true);
+      if (res.changed > 0) {
+        vscode.window.setStatusBarMessage('$(check) Qalam: updated Claude Code templates — reload to refresh', 4000);
+      }
+    }
+  } catch (_) { /* ignore */ }
+}
+
+function reloadPrompt(message) {
+  vscode.window.showInformationMessage(message, 'Reload Window').then((c) => {
+    if (c === 'Reload Window') vscode.commands.executeCommand('workbench.action.reloadWindow');
+  });
+}
+
+function reportPatchResult(res, onWarn, onError) {
+  if (!res.found) { vscode.window.showWarningMessage(onWarn); return false; }
+  if (res.error) {
+    vscode.window.showErrorMessage(
+      `${onError} (${res.error.code || res.error.message}). Claude Code's files may be read-only or locked.`
+    );
+    return false;
+  }
+  return true;
 }
 
 async function toggleClaudeRtl() {
@@ -321,31 +446,30 @@ async function toggleClaudeRtl() {
   const res = setClaudeRtl(next);
   await cfg.update('claudeCodeRtl', next, vscode.ConfigurationTarget.Global);
   updateClaudeRtlStatus();
+  if (!reportPatchResult(
+    res,
+    'Qalam: Claude Code is not installed, so there is nothing to make right-to-left. The setting was saved for when it is.',
+    "Qalam: couldn't update Claude Code's stylesheet"
+  )) return;
+  reloadPrompt(next
+    ? 'Qalam: Claude Code chat is now right-to-left. Reload the window to see it.'
+    : 'Qalam: Claude Code RTL turned off. Reload to restore the original layout.');
+}
 
-  if (!res.found) {
-    vscode.window.showWarningMessage(
-      'Qalam: Claude Code is not installed, so there is nothing to make right-to-left. The setting was saved and will apply once Claude Code is installed.'
-    );
-    return;
-  }
-  if (res.error) {
-    vscode.window.showErrorMessage(
-      `Qalam: couldn't update Claude Code's stylesheet (${res.error.code || res.error.message}). It may be read-only or in use.`
-    );
-    return;
-  }
-  if (!next) {
-    vscode.window.showInformationMessage('Qalam: Claude Code RTL turned off. Reload to restore the original layout.', 'Reload Window')
-      .then((c) => { if (c) vscode.commands.executeCommand('workbench.action.reloadWindow'); });
-    return;
-  }
-  const pick = await vscode.window.showInformationMessage(
-    'Qalam: Claude Code chat is now right-to-left. Reload the window to see it.',
-    'Reload Window'
-  );
-  if (pick === 'Reload Window') {
-    vscode.commands.executeCommand('workbench.action.reloadWindow');
-  }
+async function toggleClaudeTemplates() {
+  const cfg = vscode.workspace.getConfiguration('rtlMarkdown');
+  const next = !cfg.get('claudeCodeTemplates');
+  const res = setClaudeTemplates(next);
+  await cfg.update('claudeCodeTemplates', next, vscode.ConfigurationTarget.Global);
+  updateClaudeRtlStatus();
+  if (!reportPatchResult(
+    res,
+    'Qalam: Claude Code is not installed, so the templates button has nothing to attach to. The setting was saved for when it is.',
+    "Qalam: couldn't update Claude Code's webview script"
+  )) return;
+  reloadPrompt(next
+    ? 'Qalam: a prompt-templates button was added inside Claude Code. Reload the window to see it.'
+    : 'Qalam: the Claude Code templates button was removed. Reload to apply.');
 }
 
 function updateClaudeRtlStatus() {
@@ -355,6 +479,55 @@ function updateClaudeRtlStatus() {
   claudeRtlStatusItem.tooltip = on
     ? 'Claude Code chat is set to right-to-left (Persian/Arabic/Hebrew/Urdu read RTL; English & code stay LTR).\nClick to turn off. A window reload applies changes.'
     : 'Claude Code chat is left-to-right.\nClick to make it right-to-left. A window reload applies changes.';
+}
+
+// ── "Send to Claude Code" — push a template straight into Claude's chat ──
+// Native UI can't be typed into from outside, so we copy + focus + guide a
+// single paste. In terminal mode we can type the text in directly.
+function findClaudeTerminal() {
+  return vscode.window.terminals.find((t) => /claude/i.test(t.name || ''));
+}
+
+async function sendTemplateToClaude() {
+  const templates = getPromptTemplates();
+  if (templates.length === 0) {
+    const c = await vscode.window.showInformationMessage('Qalam: you have no prompt templates yet.', 'Add templates…');
+    if (c) editPromptTemplates();
+    return;
+  }
+  const items = templates.map((t) => ({ label: t.name, detail: previewLine(t.body), body: t.body }));
+  items.push({ label: '$(gear) Edit templates…', detail: 'Open settings to add or change templates', body: null });
+  const pick = await vscode.window.showQuickPick(items, {
+    placeHolder: 'Send a prompt template to Claude Code',
+    matchOnDetail: true
+  });
+  if (!pick) return;
+  if (pick.body === null) { editPromptTemplates(); return; }
+
+  await vscode.env.clipboard.writeText(pick.body);
+
+  // Terminal mode: type it straight into the Claude CLI (without pressing Enter).
+  const term = findClaudeTerminal();
+  if (term) {
+    term.show(true);
+    term.sendText(pick.body, false);
+    vscode.window.setStatusBarMessage('$(check) Sent to the Claude Code terminal — press Enter to run', 4000);
+    return;
+  }
+
+  // Native UI: make sure Claude is open, focus its input, then guide one paste.
+  try {
+    if (!vscode.commands.getCommands) { /* very old VS Code */ }
+    const cmds = await vscode.commands.getCommands(true);
+    if (cmds.includes('claude-vscode.editor.openLast')) {
+      await vscode.commands.executeCommand('claude-vscode.editor.openLast');
+    }
+    if (cmds.includes('claude-vscode.focus')) {
+      await vscode.commands.executeCommand('claude-vscode.focus');
+    }
+  } catch (_) { /* Claude Code not installed / command unavailable — fall through */ }
+
+  vscode.window.setStatusBarMessage('$(clippy) Template copied & Claude focused — paste with Ctrl/Cmd+V', 5000);
 }
 
 class RtlMarkdownEditorProvider {
@@ -560,9 +733,14 @@ module.exports = {
 
 // Exposed only for the offline test harness; unused inside VS Code at runtime.
 module.exports.__test__ = {
-  setClaudeRtl,
+  patchClaudeFiles,
+  findClaudeFiles,
   findClaudeCssPaths,
   claudeRtlIsApplied,
+  setClaudeRtl,
+  setClaudeTemplates,
   claudeRtlBlock,
-  CC_RTL_BLOCK_RE
+  claudeTemplatesBlock,
+  CC_RTL_BLOCK_RE,
+  CC_TPL_BLOCK_RE
 };

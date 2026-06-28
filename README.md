@@ -86,6 +86,7 @@ A real right-to-left custom editor for `.md` with live, synced preview.
 <td width="50%" valign="top">
 
 - 🤖 **Right-to-left Claude Code chat** — one click; English & code stay LTR
+- 📋 **Templates button inside Claude Code** — drop a prompt into the chat with one click
 - 🪶 **True RTL editing** — right-aligned, natural right-to-left base direction
 - 🎨 **Colorful code** — offline syntax highlighting for 17+ languages, with a language badge and one-click **Copy**
 - 📖 **11 reading themes** — Auto · GitHub · Sepia · Nord · Dracula · One Dark · Solarized Light/Dark · Rosé Pine · Gruvbox · Monokai
@@ -140,12 +141,31 @@ Claude Code renders its chat inside a **sandboxed webview**, so no extension can
 
 <br/>
 
-- The change is **CSS only** — it never touches Claude Code’s JavaScript, so it can’t break functionality.
-- It’s **idempotent and reversible**: exactly one marked block is added; toggling off restores the original file byte-for-byte.
-- It’s **scoped to chat text and the input** — toolbars, buttons and icons keep their original positions.
+- The RTL change is **CSS only** — it never touches Claude Code’s JavaScript, so it can’t break functionality.
+- The optional **templates button** adds a tiny script to Claude Code’s webview; it’s wrapped in a `try/catch` so any error is swallowed and **Claude Code keeps working** no matter what.
+- Both patches are **idempotent and reversible**: exactly one marked block is added per file; toggling off restores the original byte-for-byte.
+- The RTL rules are **scoped to chat text and the input** — toolbars, buttons and icons keep their original positions.
+- Verified by an offline test suite (`npm test`) plus a headless-browser check of the templates button.
 - GitHub Copilot’s chat is closed-source and **not** patched; use the prompt templates below with it.
 
 </details>
+
+---
+
+## 📋 Prompt templates, right inside Claude Code
+
+Master RTL puts a **templates button** in the Claude Code chat input. Click it, pick one of your saved prompts, and it drops straight into the chat box — no copy/paste, no leaving the panel.
+
+```text
+1. Set your prompts in  rtlMarkdown.promptTemplates  (6 useful Persian starters included)
+2. Click the 📋 button in the Claude Code input  →  pick a template  →  it’s inserted
+```
+
+- Your templates live in one setting and the button **stays in sync** when you edit them.
+- Re-applied automatically after Claude Code updates; toggle it off anytime with **Master RTL: Prompt-Templates Button in Claude Code** (`rtlMarkdown.claudeCodeTemplates`).
+- Prefer the keyboard? **Master RTL: Send Prompt Template to Claude Code** copies a template, focuses the chat, and — in **terminal mode** — types it straight in.
+
+> ℹ️ Like the RTL feature, a **window reload** applies changes to the button.
 
 ---
 
@@ -182,6 +202,7 @@ Master RTL is built for developers who code with **AI** *and* write right-to-lef
 | Setting | Default | Description |
 |---|---|---|
 | `rtlMarkdown.claudeCodeRtl` | `true` | Make the **Claude Code** chat panel right-to-left (English & code stay LTR). Re-applies after Claude Code updates; needs a window reload |
+| `rtlMarkdown.claudeCodeTemplates` | `true` | Add a **prompt-templates button** inside the Claude Code chat input. Re-applies after Claude Code updates; needs a window reload |
 | `rtlMarkdown.fontFamily` | `Vazirmatn, Tahoma, 'Segoe UI', sans-serif` | Font family for editor & preview |
 | `rtlMarkdown.fontSize` | `16` | Font size in pixels |
 | `rtlMarkdown.lineHeight` | `2` | Line height |
@@ -198,6 +219,8 @@ Master RTL is built for developers who code with **AI** *and* write right-to-lef
 | Action | How |
 |---|---|
 | **Make Claude Code chat RTL** | Status-bar **Claude RTL** button · **Master RTL: Right-to-Left for Claude Code** |
+| **Templates button in Claude Code** | **Master RTL: Prompt-Templates Button in Claude Code** (toggle) |
+| **Send a template to Claude Code** | **Master RTL: Send Prompt Template to Claude Code** |
 | Insert an AI prompt template | Status-bar **Prompts** button · **Master RTL: Insert AI Prompt Template** |
 | Toggle the RTL Markdown editor | Status-bar **RTL** button · **Master RTL: Toggle RTL Markdown Editor** |
 | Save | `Ctrl / Cmd + S` |
