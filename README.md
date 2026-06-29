@@ -313,6 +313,18 @@ Install the generated `.vsix` from the Extensions view → **…** → **Install
 
 ### Made with ♥ for the right-to-left writing community
 
+<br/>
+
+### 👤 Author — Morpheus Adam
+
+Web developer & cheerful hacker · PHP · Laravel · Go
+
+<p>
+  <a href="https://github.com/morpheusadam"><img src="https://img.shields.io/badge/GitHub-morpheusadam-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" /></a>
+  <a href="https://sam.zeonic.me"><img src="https://img.shields.io/badge/Website-sam.zeonic.me-4c1?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Website" /></a>
+  <a href="mailto:morpheusadam95@gmail.com"><img src="https://img.shields.io/badge/Email-Contact-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Email" /></a>
+</p>
+
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:4f46e5,50:7c3aed,100:d97757&height=120&section=footer" width="100%" alt="footer" />
 
 **[MIT License](LICENSE)** © morpheusadam
