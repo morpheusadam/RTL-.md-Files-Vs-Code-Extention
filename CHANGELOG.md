@@ -2,6 +2,11 @@
 
 All notable changes to the **Master RTL** extension are documented here.
 
+## [3.4.2]
+
+### Maintenance
+- **Republished as a clean version bump so the 3.4.1 fix installs as an update.** No behavior changes since 3.4.1 — VS Code only treats a package as an update when its version number increases, so this release carries the obsolete-folder fix forward under a new version that installs cleanly over an existing 3.4.1 build. After updating, run **Developer: Reload Window** once for it to take effect.
+
 ## [3.4.1]
 
 ### Fixed

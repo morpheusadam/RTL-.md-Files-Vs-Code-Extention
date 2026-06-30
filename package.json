@@ -2,7 +2,7 @@
   "name": "qalam-rtl-markdown",
   "displayName": "Master RTL — RTL for Claude Code, Markdown & AI Chat",
   "description": "Master RTL makes Claude Code, Markdown and AI chat truly right-to-left in VS Code. Read & write Persian (فارسی), Arabic (العربية), Hebrew (עברית) and Urdu (اردو) naturally: one-click RTL for the Claude Code chat panel, 11 beautiful color themes for the Claude Code chat (Dracula, Nord, Tokyo Night, Catppuccin…), a real RTL Markdown editor with live preview, 11 reading themes, colorful code highlighting, a live outline, a formatting toolbar and reusable AI prompt templates. English and code stay left-to-right automatically.",
-  "version": "3.4.1",
+  "version": "3.4.2",
   "publisher": "morpheusadam",
   "license": "MIT",
   "icon": "icon.png",
