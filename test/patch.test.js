@@ -21,14 +21,15 @@ function findRealClaudeCss() {
   } catch (_) { /* no extensions dir */ }
   return null;
 }
-// Strip any previously-applied block so the baseline is always "unpatched",
-// even when the real Claude Code CSS already has Master RTL installed.
+// Strip any previously-applied Master RTL block (RTL or theme) so the baseline
+// is always "unpatched", even when the real Claude Code CSS already has them.
 const STRIP_RE = /\n*\/\* =====[ ]QALAM-RTL-CLAUDE-CODE:START[\s\S]*?QALAM-RTL-CLAUDE-CODE:END ===== \*\/\n*/g;
+const STRIP_THEME_RE = /\n*\/\* =====[ ]QALAM-THEME-CLAUDE-CODE:START[\s\S]*?QALAM-THEME-CLAUDE-CODE:END ===== \*\/\n*/g;
 const realCss = findRealClaudeCss();
 const ORIGINAL = (realCss
   ? fs.readFileSync(realCss, 'utf8')
   : '.message_07S1Yg{display:flex}.messageInput_cKsPxg{outline:none}'
-).replace(STRIP_RE, '\n');
+).replace(STRIP_RE, '\n').replace(STRIP_THEME_RE, '\n');
 console.log(realCss ? `fixture: real Claude Code CSS (${path.basename(path.dirname(path.dirname(realCss)))})` : 'fixture: synthetic CSS (Claude Code not installed)');
 
 // ── build a temp "extension" dir with the fixture ──
@@ -48,8 +49,8 @@ require.cache['vscode'] = { id: 'vscode', filename: 'vscode', loaded: true, expo
 }};
 
 const __t = require(path.join(__dirname, '..', 'extension.js')).__test__;
-const { setClaudeRtl, findClaudeCssPaths, claudeRtlIsApplied, CC_RTL_BLOCK_RE,
-        patchClaudeFiles, claudeTemplatesBlock, CC_TPL_BLOCK_RE } = __t;
+const { setClaudeRtl, findClaudeCssPaths, findClaudeFiles, claudeRtlIsApplied, CC_RTL_BLOCK_RE,
+        patchClaudeFiles, claudeThemeBlock, CC_THEME_BLOCK_RE, CC_THEMES } = __t;
 
 let failures = 0;
 const check = (name, ok) => { console.log((ok ? '  PASS  ' : '  FAIL  ') + name); if (!ok) failures++; };
@@ -78,38 +79,81 @@ check('remove: restored to original', a3.trimEnd() === ORIGINAL.trimEnd());
 setClaudeRtl(true);
 check('regex strips block cleanly', count(read().replace(CC_RTL_BLOCK_RE, '\n'), 'QALAM-RTL-CLAUDE-CODE') === 0);
 
-// ── Prompt-templates patch (webview/index.js) ──
-console.log('\nPrompt-templates button patch (webview/index.js):');
-const jsPath = path.join(extDir, 'webview', 'index.js');
-const ORIG_JS = 'var x=1;try{boot()}catch(e){log(e)}';
-fs.writeFileSync(jsPath, ORIG_JS, 'utf8');
-const TPLS = [
-  { name: 'Explain', body: 'این کد را توضیح بده:\n\n' },
-  // nasty body: closing-script sequence, backticks, ${}, quotes, backslash
-  { name: 'Tricky', body: 'x = `a${b}` </' + 'script> "q" \\ end' }
-];
-const readJs = () => fs.readFileSync(jsPath, 'utf8');
-const block = claudeTemplatesBlock(TPLS);
+// reset the css fixture before the theme tests
+setClaudeRtl(false);
 
-const j1 = patchClaudeFiles([jsPath], CC_TPL_BLOCK_RE, block);
-check('tpl apply: one change, no error', j1.changed === 1 && j1.error === null);
-check('tpl apply: original JS kept as prefix', readJs().startsWith(ORIG_JS));
-check('tpl apply: one block', count(readJs(), 'QALAM-CC-TEMPLATES:END') === 1);
-check('tpl apply: injected IIFE is valid JS', (() => { try { new Function(block); return true; } catch (_) { return false; } })());
-check('tpl apply: whole bundle still parses (safe append)', (() => { try { new Function(readJs()); return true; } catch (_) { return false; } })());
-check('tpl apply: nasty body baked in & escaped', readJs().includes('</' + 'script>'));
+// ── Chat color-theme patch (webview/index.css) ──
+console.log('\nChat color-theme patch (webview/index.css):');
+const themeKeys = Object.keys(CC_THEMES);
+check('ships several themes (>= 8)', themeKeys.length >= 8);
+check('default/unknown name produces no block', claudeThemeBlock('default') === null && claudeThemeBlock('nope') === null);
 
-const j2 = patchClaudeFiles([jsPath], CC_TPL_BLOCK_RE, claudeTemplatesBlock(TPLS));
-check('tpl idempotent: no second write', j2.changed === 0);
-check('tpl idempotent: still one block', count(readJs(), 'QALAM-CC-TEMPLATES:END') === 1);
+// every theme must produce a self-contained, valid CSS block
+let allValid = true;
+for (const k of themeKeys) {
+  const b = claudeThemeBlock(k) || '';
+  const balancedBraces = count(b, '{') === count(b, '}');
+  const hasMarkers = b.includes('QALAM-THEME-CLAUDE-CODE:START') && b.includes('QALAM-THEME-CLAUDE-CODE:END');
+  const themesVars = b.includes('--app-primary-background') && b.includes('--app-claude-orange');
+  if (!(balancedBraces && hasMarkers && themesVars)) { allValid = false; console.log('    bad theme: ' + k); }
+}
+check('every theme block is balanced, marked & sets the key variables', allValid);
 
-patchClaudeFiles([jsPath], CC_TPL_BLOCK_RE, null);
-check('tpl remove: no marker remains', count(readJs(), 'QALAM-CC-TEMPLATES') === 0);
-check('tpl remove: restored to original', readJs().trimEnd() === ORIG_JS.trimEnd());
+const t1 = patchClaudeFiles([cssPath], CC_THEME_BLOCK_RE, claudeThemeBlock('dracula'));
+check('theme apply: one change, no error', t1.changed === 1 && t1.error === null);
+check('theme apply: exactly one block', count(read(), 'QALAM-THEME-CLAUDE-CODE:END') === 1);
+check('theme apply: original CSS kept as prefix', read().startsWith(ORIGINAL.replace(/\s*$/, '')));
+
+const t2 = patchClaudeFiles([cssPath], CC_THEME_BLOCK_RE, claudeThemeBlock('dracula'));
+check('theme idempotent: no second write', t2.changed === 0);
+
+// switching theme replaces (not stacks) the block
+patchClaudeFiles([cssPath], CC_THEME_BLOCK_RE, claudeThemeBlock('nord'));
+check('switching theme keeps exactly one block', count(read(), 'QALAM-THEME-CLAUDE-CODE:START') === 1);
+check('switching theme writes the new theme name', read().includes('"nord"') && !read().includes('"dracula"'));
+
+patchClaudeFiles([cssPath], CC_THEME_BLOCK_RE, null);
+check('theme remove: no marker remains', count(read(), 'QALAM-THEME-CLAUDE-CODE') === 0);
+check('theme remove: restored to original', read().trimEnd() === ORIGINAL.trimEnd());
+
+// RTL and theme blocks coexist independently in the same file
+setClaudeRtl(true);
+patchClaudeFiles([cssPath], CC_THEME_BLOCK_RE, claudeThemeBlock('gruvbox'));
+check('RTL + theme coexist (both blocks present)',
+  count(read(), 'QALAM-RTL-CLAUDE-CODE:END') === 1 && count(read(), 'QALAM-THEME-CLAUDE-CODE:END') === 1);
+patchClaudeFiles([cssPath], CC_THEME_BLOCK_RE, null);
+check('removing theme leaves the RTL block intact', count(read(), 'QALAM-RTL-CLAUDE-CODE:END') === 1 && count(read(), 'QALAM-THEME-CLAUDE-CODE') === 0);
+setClaudeRtl(false);
 
 // ── No-install handling ──
 const none = patchClaudeFiles([], CC_RTL_BLOCK_RE, null);
 check('no Claude Code installed → found:false, no writes', none.found === false && none.changed === 0);
+
+// ── Obsolete-version handling (the github-light "stuck + error" bug) ──
+// After Claude Code updates, VS Code leaves the old version's folder on disk and
+// lists it in `.obsolete`. That folder may be locked/mid-deletion, so writing to
+// it throws and used to block the whole operation. findClaudeFiles must patch
+// ONLY the live install and skip the obsolete copy.
+console.log('\nObsolete-version handling:');
+const vsStub = require.cache['vscode'].exports;
+const realGetExt = vsStub.extensions.getExtension;
+const obsRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'masterrtl-obs-'));
+const liveDir = path.join(obsRoot, 'anthropic.claude-code-2.1.196-win32-x64');
+const oldDir  = path.join(obsRoot, 'anthropic.claude-code-2.1.195-win32-x64');
+for (const d of [liveDir, oldDir]) fs.mkdirSync(path.join(d, 'webview'), { recursive: true });
+fs.writeFileSync(path.join(liveDir, 'webview', 'index.css'), ORIGINAL, 'utf8');
+fs.writeFileSync(path.join(oldDir,  'webview', 'index.css'), ORIGINAL, 'utf8');
+fs.writeFileSync(path.join(obsRoot, '.obsolete'),
+  JSON.stringify({ 'anthropic.claude-code-2.1.195-win32-x64': true }), 'utf8');
+vsStub.extensions.getExtension = (id) =>
+  id === 'anthropic.claude-code' ? { extensionPath: liveDir } : undefined;
+
+const obsFound = findClaudeFiles(path.join('webview', 'index.css'));
+check('obsolete version is skipped (only the live copy is patched)',
+  obsFound.length === 1 && obsFound[0].includes('2.1.196') && !obsFound.some((p) => p.includes('2.1.195')));
+
+vsStub.extensions.getExtension = realGetExt; // restore for any later checks
+fs.rmSync(obsRoot, { recursive: true, force: true });
 
 fs.rmSync(tmpRoot, { recursive: true, force: true });
 console.log('\n' + (failures === 0 ? 'ALL TESTS PASSED ✓' : failures + ' TEST(S) FAILED'));

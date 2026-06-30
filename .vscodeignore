@@ -4,5 +4,6 @@
 **/*.map
 node_modules/**
 _rtltest/**
+_thmtest/**
 test/**
 *.vsix

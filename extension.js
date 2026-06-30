@@ -55,83 +55,93 @@ function claudeRtlBlock() {
 `;
 }
 
-// ── Claude Code prompt-templates button (injected into its webview) ───────────
-// We append a small, self-contained, try/catch-guarded script to Claude Code's
-// own `webview/index.js`. Running inside the webview, it adds a "templates"
-// button next to the chat input; clicking it inserts the chosen prompt straight
-// into Claude Code's editor. The user's templates are baked into the script, so
-// it needs no network or settings access. The whole block is marker-guarded and
-// fully reversible, and any error is swallowed so Claude Code can never break.
-const CC_JS_REL = path.join('webview', 'index.js');
-const CC_TPL_END = 'QALAM-CC-TEMPLATES:END */';
-// Leading `;?` matches the ASI-safety semicolon the block starts with, so the
-// block is stripped cleanly (idempotent apply, clean removal).
-const CC_TPL_BLOCK_RE = /\n*;?\/\* QALAM-CC-TEMPLATES:START[\s\S]*?QALAM-CC-TEMPLATES:END \*\/\n*/g;
+// ── Claude Code chat color themes ────────────────────────────────────────────
+// Claude Code's chat is built on its own semantic CSS variables (--app-*, which
+// fall back to --vscode-*). We append a guarded, reversible block to its OWN
+// webview/index.css that re-defines those variables, recolouring the whole chat
+// to a chosen theme — backgrounds, message text, code surface, accents, links.
+// Code syntax tokens are produced by Monaco from the active VS Code theme, so
+// they keep following it; the theme harmonises everything around them.
+const CC_THEME_END = 'QALAM-THEME-CLAUDE-CODE:END ===== */';
+const CC_THEME_BLOCK_RE = /\n*\/\* =====[ ]QALAM-THEME-CLAUDE-CODE:START[\s\S]*?QALAM-THEME-CLAUDE-CODE:END ===== \*\/\n*/g;
 
-function claudeTemplatesBlock(templates) {
-  const data = JSON.stringify(
-    (Array.isArray(templates) ? templates : [])
-      .filter((t) => t && typeof t.name === 'string' && typeof t.body === 'string')
-      .map((t) => ({ name: t.name, body: t.body }))
-  );
-  // The injected IIFE. Kept dependency-free and defensive.
+// Curated, professional palettes. `dark` drives color-scheme; the rest map onto
+// Claude Code's variables. Keys are the values of rtlMarkdown.claudeCodeTheme.
+const CC_THEMES = {
+  dracula:        { label: 'Dracula',          dark: true,  bg: '#282a36', bg2: '#21222c', fg: '#f8f8f2', fg2: '#a6accd', accent: '#bd93f9', accent2: '#ff79c6', code: '#1e1f29', input: '#21222c', border: '#44475a', link: '#8be9fd' },
+  nord:           { label: 'Nord',             dark: true,  bg: '#2e3440', bg2: '#272c36', fg: '#e5e9f0', fg2: '#8a93a6', accent: '#88c0d0', accent2: '#81a1c1', code: '#272b35', input: '#3b4252', border: '#434c5e', link: '#88c0d0' },
+  'one-dark':     { label: 'One Dark',         dark: true,  bg: '#282c34', bg2: '#21252b', fg: '#abb2bf', fg2: '#7f848e', accent: '#61afef', accent2: '#c678dd', code: '#21252b', input: '#2c313a', border: '#3b4048', link: '#56b6c2' },
+  'tokyo-night':  { label: 'Tokyo Night',      dark: true,  bg: '#1a1b26', bg2: '#16161e', fg: '#c0caf5', fg2: '#787c99', accent: '#7aa2f7', accent2: '#bb9af7', code: '#16161e', input: '#1f2335', border: '#2a2e42', link: '#7dcfff' },
+  catppuccin:     { label: 'Catppuccin Mocha', dark: true,  bg: '#1e1e2e', bg2: '#181825', fg: '#cdd6f4', fg2: '#9399b2', accent: '#cba6f7', accent2: '#f5c2e7', code: '#181825', input: '#313244', border: '#313244', link: '#89b4fa' },
+  gruvbox:        { label: 'Gruvbox Dark',     dark: true,  bg: '#282828', bg2: '#1d2021', fg: '#ebdbb2', fg2: '#a89984', accent: '#fabd2f', accent2: '#fe8019', code: '#1d2021', input: '#3c3836', border: '#504945', link: '#83a598' },
+  'solarized-dark': { label: 'Solarized Dark', dark: true,  bg: '#002b36', bg2: '#00252e', fg: '#93a1a1', fg2: '#5f757d', accent: '#268bd2', accent2: '#b58900', code: '#00252e', input: '#073642', border: '#0a4b5a', link: '#2aa198' },
+  'rose-pine':    { label: 'Rosé Pine',        dark: true,  bg: '#191724', bg2: '#1f1d2e', fg: '#e0def4', fg2: '#908caa', accent: '#ebbcba', accent2: '#c4a7e7', code: '#1f1d2e', input: '#26233a', border: '#2a2837', link: '#9ccfd8' },
+  synthwave:      { label: 'Synthwave',        dark: true,  bg: '#262335', bg2: '#1f1d2b', fg: '#ffffff', fg2: '#b8a7d9', accent: '#ff7edb', accent2: '#36f9f6', code: '#1a1726', input: '#2a2640', border: '#463a6b', link: '#36f9f6' },
+  sepia:          { label: 'Sepia (Paper)',    dark: false, bg: '#f4ecd8', bg2: '#fbf3e3', fg: '#433422', fg2: '#7a6a52', accent: '#b5651d', accent2: '#8a5a2b', code: '#efe6d0', input: '#fbf3e3', border: '#ddcdb0', link: '#8a5a2b' },
+  'github-light': { label: 'GitHub Light',     dark: false, bg: '#ffffff', bg2: '#f6f8fa', fg: '#1f2328', fg2: '#656d76', accent: '#0969da', accent2: '#8250df', code: '#f6f8fa', input: '#ffffff', border: '#d0d7de', link: '#0969da' }
+};
+
+function claudeThemeBlock(name) {
+  const t = CC_THEMES[name];
+  if (!t) return null; // 'default' / unknown → no block, keep Claude Code's own colours
   return `
-;/* QALAM-CC-TEMPLATES:START — added by "Qalam — RTL Markdown" (rtlMarkdown.claudeCodeTemplates). Safe to delete. */
-(function(){try{
-  var T=${data};
-  if(!Array.isArray(T)||!T.length)return;
-  var BTN="qalam-tpl-btn",MENU="qalam-tpl-menu";
-  function input(){return document.querySelector('[class*="messageInput_"]');}
-  function anchor(){return document.querySelector('[class*="messageInputContainer_"]')||(input()&&input().parentElement);}
-  function styles(){
-    if(document.getElementById("qalam-tpl-style"))return;
-    var s=document.createElement("style");s.id="qalam-tpl-style";
-    s.textContent=
-    '.'+BTN+'{position:absolute;top:5px;inset-inline-start:5px;z-index:5;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;border-radius:6px;background:var(--vscode-button-secondaryBackground,rgba(127,127,127,.16));color:var(--vscode-foreground,#ddd);cursor:pointer;font-size:13px;line-height:1;opacity:.65;padding:0}'+
-    '.'+BTN+':hover{opacity:1;background:var(--vscode-button-secondaryHoverBackground,rgba(127,127,127,.3))}'+
-    '.'+MENU+'{position:fixed;z-index:99999;min-width:200px;max-width:340px;max-height:50vh;overflow:auto;background:var(--vscode-menu-background,var(--vscode-editorWidget-background,#252526));color:var(--vscode-menu-foreground,var(--vscode-foreground,#ddd));border:1px solid var(--vscode-menu-border,var(--vscode-editorWidget-border,#454545));border-radius:8px;box-shadow:0 6px 22px rgba(0,0,0,.4);padding:4px}'+
-    '.'+MENU+' button{display:block;width:100%;text-align:start;background:none;border:none;color:inherit;padding:6px 10px;border-radius:5px;cursor:pointer;font:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;unicode-bidi:plaintext}'+
-    '.'+MENU+' button:hover{background:var(--vscode-menu-selectionBackground,var(--vscode-list-activeSelectionBackground,#04395e))}';
-    document.head.appendChild(s);
-  }
-  function insert(text){
-    var el=input();if(!el)return false;el.focus();
-    try{var sel=window.getSelection(),r=document.createRange();r.selectNodeContents(el);r.collapse(false);sel.removeAllRanges();sel.addRange(r);}catch(e){}
-    var ok=false;try{ok=document.execCommand("insertText",false,text);}catch(e){}
-    if(!ok){try{el.dispatchEvent(new InputEvent("beforeinput",{inputType:"insertText",data:text,bubbles:true,cancelable:true}));el.dispatchEvent(new InputEvent("input",{inputType:"insertText",data:text,bubbles:true}));ok=true;}catch(e){}}
-    return ok;
-  }
-  function close(){var m=document.getElementById(MENU);if(m)m.remove();}
-  function open(btn){
-    close();var m=document.createElement("div");m.id=MENU;m.className=MENU;
-    T.forEach(function(t){var b=document.createElement("button");b.type="button";b.textContent=t.name;b.title=(t.body||"").replace(/\\s+/g," ").slice(0,120);
-      b.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();insert(t.body||"");cleanup();});m.appendChild(b);});
-    document.body.appendChild(m);
-    var r=btn.getBoundingClientRect();m.style.insetInlineStart=r.left+"px";m.style.bottom=(window.innerHeight-r.top+6)+"px";
-    function onDoc(e){if(!m.contains(e.target)&&e.target!==btn)cleanup();}
-    function onKey(e){if(e.key==="Escape")cleanup();}
-    function cleanup(){close();document.removeEventListener("mousedown",onDoc,true);document.removeEventListener("keydown",onKey,true);}
-    setTimeout(function(){document.addEventListener("mousedown",onDoc,true);document.addEventListener("keydown",onKey,true);},0);
-  }
-  function ensure(){
-    if(document.getElementById(BTN))return;
-    var a=anchor();if(!a)return;styles();
-    try{if(getComputedStyle(a).position==="static")a.style.position="relative";}catch(e){}
-    var btn=document.createElement("button");btn.id=BTN;btn.type="button";btn.className=BTN;btn.title="Qalam — prompt templates";btn.textContent="\\uD83D\\uDCCB";
-    btn.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();if(document.getElementById(MENU))close();else open(btn);});
-    a.appendChild(btn);
-  }
-  var obs=new MutationObserver(function(){try{ensure();}catch(e){}});
-  function start(){try{ensure();}catch(e){}try{obs.observe(document.body,{childList:true,subtree:true});}catch(e){}}
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);else start();
-}catch(e){/* never break Claude Code */}})();
-/* QALAM-CC-TEMPLATES:END */
+
+/* ===== QALAM-THEME-CLAUDE-CODE:START =====
+   Added by Master RTL (setting: rtlMarkdown.claudeCodeTheme = "${name}").
+   Recolours the Claude Code chat with the "${t.label}" theme. Fully reversible —
+   delete this block, pick "Default", or run "Master RTL: Claude Code Chat Theme". */
+:root, html, body {
+  color-scheme: ${t.dark ? 'dark' : 'light'};
+  --app-primary-background: ${t.bg};
+  --app-secondary-background: ${t.bg2};
+  --app-primary-foreground: ${t.fg};
+  --app-secondary-foreground: ${t.fg2};
+  --app-input-background: ${t.input};
+  --app-input-foreground: ${t.fg};
+  --app-input-secondary-foreground: ${t.fg2};
+  --app-input-placeholder-foreground: ${t.fg2};
+  --app-input-border: ${t.border};
+  --app-code-background: ${t.code};
+  --app-claude-orange: ${t.accent};
+  --app-claude-clay-button-orange: ${t.accent};
+  --app-accent-color: ${t.accent};
+  --app-warning-accent: ${t.accent2};
+  --app-link: ${t.link};
+  --app-link-color: ${t.link};
+  --app-link-foreground: ${t.link};
+  --app-primary-border-color: ${t.border};
+  --vscode-sideBar-background: ${t.bg};
+  --vscode-editor-background: ${t.code};
+  --vscode-foreground: ${t.fg};
+  --vscode-descriptionForeground: ${t.fg2};
+  --vscode-input-background: ${t.input};
+  --vscode-input-foreground: ${t.fg};
+  --vscode-textLink-foreground: ${t.link};
+  --vscode-textLink-activeForeground: ${t.link};
+  --vscode-focusBorder: ${t.accent};
+  --vscode-panel-border: ${t.border};
+  --vscode-widget-border: ${t.border};
+  --vscode-scrollbarSlider-background: ${t.border}88;
+}
+[class*="codeBlockWrapper"] {
+  background: ${t.code};
+  border: 1px solid ${t.border};
+  border-radius: 8px;
+}
+[class*="message_"] :not(pre) > code {
+  background: ${t.code};
+  border: 1px solid ${t.border}66;
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+/* ===== QALAM-THEME-CLAUDE-CODE:END ===== */
 `;
 }
 
 let statusBarItem;
 let promptStatusItem;
 let claudeRtlStatusItem;
+let claudeThemeStatusItem;
 
 function activate(context) {
   const provider = new RtlMarkdownEditorProvider(context);
@@ -172,11 +182,10 @@ function activate(context) {
     vscode.commands.registerCommand('rtlMarkdown.editPromptTemplates', editPromptTemplates)
   );
 
-  // Claude Code integration: RTL toggle, templates-button toggle, smart send.
+  // Claude Code integration: RTL toggle + chat color-theme picker.
   context.subscriptions.push(
     vscode.commands.registerCommand('rtlMarkdown.toggleClaudeRtl', toggleClaudeRtl),
-    vscode.commands.registerCommand('rtlMarkdown.toggleClaudeTemplates', toggleClaudeTemplates),
-    vscode.commands.registerCommand('rtlMarkdown.sendTemplateToClaude', sendTemplateToClaude)
+    vscode.commands.registerCommand('rtlMarkdown.pickClaudeTheme', pickClaudeTheme)
   );
 
   // Status bar (footer) button.
@@ -198,26 +207,33 @@ function activate(context) {
   claudeRtlStatusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 99);
   claudeRtlStatusItem.command = 'rtlMarkdown.toggleClaudeRtl';
   context.subscriptions.push(claudeRtlStatusItem);
-  updateClaudeRtlStatus();
   claudeRtlStatusItem.show();
 
-  // Apply the Claude Code patches (RTL + templates button) on startup per their
+  // Status bar button to pick a color theme for the Claude Code chat.
+  claudeThemeStatusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 98);
+  claudeThemeStatusItem.command = 'rtlMarkdown.pickClaudeTheme';
+  context.subscriptions.push(claudeThemeStatusItem);
+  claudeThemeStatusItem.show();
+
+  updateClaudeStatus();
+
+  // Apply the Claude Code patches (RTL + chat theme) on startup per their
   // settings. This also re-applies after Claude Code updates, which reset its files.
   applyClaudePatchesOnStartup();
 
-  // Keep the buttons in sync if settings change elsewhere.
+  // Keep everything in sync if settings change elsewhere. Crucially, when the
+  // Claude RTL / theme settings change — including from VS Code's Settings UI,
+  // not just our own picker — re-apply the CSS patch so the choice actually
+  // takes effect (previously this only refreshed the status bar, so changing the
+  // theme in Settings appeared to do nothing).
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('workbench.editorAssociations')) {
         updateStatusBar();
       }
       if (e.affectsConfiguration('rtlMarkdown.claudeCodeRtl') ||
-          e.affectsConfiguration('rtlMarkdown.claudeCodeTemplates')) {
-        updateClaudeRtlStatus();
-      }
-      // Re-bake the in-Claude templates button whenever the user edits templates.
-      if (e.affectsConfiguration('rtlMarkdown.promptTemplates')) {
-        refreshClaudeTemplatesIfOn();
+          e.affectsConfiguration('rtlMarkdown.claudeCodeTheme')) {
+        applyClaudePatches({ prompt: true });
       }
     })
   );
@@ -326,27 +342,45 @@ function editPromptTemplates() {
 }
 
 // ── Claude Code patching: locate + safely modify its webview assets ──
+// When VS Code updates an extension it leaves the superseded version's folder on
+// disk for a while and records it in `<extensions>/.obsolete`. Those folders may
+// be locked or mid-deletion, so writing into them throws (EPERM/EBUSY/ENOENT) —
+// and they are about to disappear anyway. We must patch only the *live* install.
+function obsoleteExtensionFolders(extensionsRoot) {
+  try {
+    const map = JSON.parse(fs.readFileSync(path.join(extensionsRoot, '.obsolete'), 'utf8'));
+    return new Set(Object.keys(map).filter((k) => map[k]));
+  } catch (_) {
+    return new Set(); // no marker file (or unreadable) → assume nothing obsolete
+  }
+}
+
 // Returns the absolute path(s) to a file (relative to the extension root) inside
-// every installed Claude Code, e.g. findClaudeFiles('webview/index.css').
+// the live Claude Code install, e.g. findClaudeFiles('webview/index.css').
 function findClaudeFiles(rel) {
   const paths = new Set();
 
-  // Preferred: ask VS Code where the installed extension lives.
+  // Preferred: ask VS Code where the active extension lives. This is never the
+  // obsolete copy, so always patch it.
   const ext = vscode.extensions.getExtension(CC_EXT_ID);
+  const activeName = ext && ext.extensionPath ? path.basename(ext.extensionPath) : null;
   if (ext && ext.extensionPath) {
     paths.add(path.join(ext.extensionPath, rel));
   }
 
   // Fallback: scan the extensions folder for anthropic.claude-code-* (covers
-  // platform-specific folder names and the case where the API hasn't seen it yet).
+  // platform-specific folder names and the case where the API hasn't seen it
+  // yet) — but skip any version VS Code has marked obsolete. Patching a dying
+  // copy only throws spurious "couldn't update Claude Code" errors.
   try {
     const guess = ext && ext.extensionPath
       ? path.dirname(ext.extensionPath)
       : path.join(require('os').homedir(), '.vscode', 'extensions');
+    const obsolete = obsoleteExtensionFolders(guess);
     for (const name of fs.readdirSync(guess)) {
-      if (/^anthropic\.claude-code-/i.test(name)) {
-        paths.add(path.join(guess, name, rel));
-      }
+      if (!/^anthropic\.claude-code-/i.test(name)) continue;
+      if (obsolete.has(name) && name !== activeName) continue; // skip superseded versions
+      paths.add(path.join(guess, name, rel));
     }
   } catch (_) { /* extensions dir not found — ignore */ }
 
@@ -395,32 +429,14 @@ function claudeRtlIsApplied() {
   });
 }
 
-// Prompt-templates button patch (webview/index.js). Always re-bakes the current
-// templates so the in-Claude button stays in sync with the user's settings.
-function setClaudeTemplates(enable) {
-  const block = enable ? claudeTemplatesBlock(getPromptTemplates()) : null;
-  return patchClaudeFiles(findClaudeFiles(CC_JS_REL), CC_TPL_BLOCK_RE, block);
+// Chat color-theme patch (webview/index.css). `name` is a key of CC_THEMES, or
+// 'default'/unknown to remove the theme block and restore Claude Code's colours.
+function getClaudeTheme() {
+  const v = vscode.workspace.getConfiguration('rtlMarkdown').get('claudeCodeTheme');
+  return typeof v === 'string' ? v : 'default';
 }
-
-// Apply both patches silently on startup per their settings (best-effort; never
-// throws). Also re-applies after Claude Code updates, which reset its files.
-function applyClaudePatchesOnStartup() {
-  const cfg = vscode.workspace.getConfiguration('rtlMarkdown');
-  try { if (cfg.get('claudeCodeRtl')) setClaudeRtl(true); } catch (_) { /* ignore */ }
-  try { if (cfg.get('claudeCodeTemplates')) setClaudeTemplates(true); } catch (_) { /* ignore */ }
-  updateClaudeRtlStatus();
-}
-
-// Re-bake the templates block when the user's templates change (if enabled).
-function refreshClaudeTemplatesIfOn() {
-  try {
-    if (vscode.workspace.getConfiguration('rtlMarkdown').get('claudeCodeTemplates')) {
-      const res = setClaudeTemplates(true);
-      if (res.changed > 0) {
-        vscode.window.setStatusBarMessage('$(check) Qalam: updated Claude Code templates — reload to refresh', 4000);
-      }
-    }
-  } catch (_) { /* ignore */ }
+function setClaudeTheme(name) {
+  return patchClaudeFiles(findClaudeFiles(CC_CSS_REL), CC_THEME_BLOCK_RE, claudeThemeBlock(name));
 }
 
 function reloadPrompt(message) {
@@ -429,105 +445,125 @@ function reloadPrompt(message) {
   });
 }
 
-function reportPatchResult(res, onWarn, onError) {
-  if (!res.found) { vscode.window.showWarningMessage(onWarn); return false; }
-  if (res.error) {
+// Single place that brings Claude Code's CSS in line with the current settings:
+// it (re)writes the RTL block and the theme block, refreshes the status bar and,
+// when asked, prompts a reload. Centralising it means the chat theme/RTL apply
+// the SAME way whether they were changed from the status-bar picker, the command
+// palette, or directly in VS Code's Settings UI. Best-effort: never throws.
+//
+//   prompt:false → silent (startup / re-apply after a Claude Code update)
+//   prompt:true  → user-initiated: show a reload prompt (or a clear reason if not)
+function applyClaudePatches({ prompt = false } = {}) {
+  const cfg = vscode.workspace.getConfiguration('rtlMarkdown');
+  let rtlRes = { changed: 0, found: false, error: null };
+  let themeRes = { changed: 0, found: false, error: null };
+  try { rtlRes = setClaudeRtl(!!cfg.get('claudeCodeRtl')); } catch (e) { rtlRes.error = e; }
+  try { themeRes = setClaudeTheme(getClaudeTheme()); } catch (e) { themeRes.error = e; }
+  updateClaudeStatus();
+
+  if (!prompt) return;
+
+  const found = rtlRes.found || themeRes.found;
+  const changed = rtlRes.changed + themeRes.changed;
+  const error = rtlRes.error || themeRes.error;
+
+  if (!found) {
+    vscode.window.showWarningMessage(
+      'Master RTL: Claude Code is not installed yet — your choice was saved and will apply automatically once it is.'
+    );
+    return;
+  }
+  // Only a hard failure if NOTHING could be written. If at least one file
+  // changed, the live Claude Code install got the update — a stale/locked
+  // leftover copy failing is harmless and must not block the reload prompt.
+  if (error && changed === 0) {
     vscode.window.showErrorMessage(
-      `${onError} (${res.error.code || res.error.message}). Claude Code's files may be read-only or locked.`
+      `Master RTL: couldn't update Claude Code's stylesheet (${error.code || error.message}). Its files may be read-only or locked.`
+    );
+    return;
+  }
+  if (changed > 0) {
+    reloadPrompt('Master RTL: Claude Code chat updated. Reload the window to see your changes.');
+  }
+  // changed === 0 with no error → disk already matches the settings; nothing to do.
+}
+
+// Apply patches silently on startup per their settings (best-effort; never
+// throws). Also re-applies after Claude Code updates, which reset its files.
+function applyClaudePatchesOnStartup() {
+  try { applyClaudePatches({ prompt: false }); } catch (_) { /* best-effort */ }
+}
+
+// Persist a setting without ever throwing out of a command. If VS Code can't
+// write user settings (a malformed settings.json, a read-only/locked file, a
+// sync conflict…), we still apply the CSS change so the theme/RTL takes effect
+// now — we just warn that the choice may not survive a reload. This is what
+// turns the dreaded "couldn't save to settings.json" hard-stop into a soft,
+// recoverable notice.
+async function saveClaudeSetting(key, value) {
+  try {
+    await vscode.workspace.getConfiguration('rtlMarkdown')
+      .update(key, value, vscode.ConfigurationTarget.Global);
+    return true;
+  } catch (e) {
+    vscode.window.showWarningMessage(
+      `Master RTL: applied your change, but couldn't save it to settings.json ` +
+      `(${(e && (e.code || e.message)) || 'unknown error'}). It may reset on the next ` +
+      `reload — if so, set "rtlMarkdown.${key}" in Settings manually.`
     );
     return false;
   }
-  return true;
 }
 
 async function toggleClaudeRtl() {
   const cfg = vscode.workspace.getConfiguration('rtlMarkdown');
   const next = !cfg.get('claudeCodeRtl');
-  const res = setClaudeRtl(next);
-  await cfg.update('claudeCodeRtl', next, vscode.ConfigurationTarget.Global);
-  updateClaudeRtlStatus();
-  if (!reportPatchResult(
-    res,
-    'Qalam: Claude Code is not installed, so there is nothing to make right-to-left. The setting was saved for when it is.',
-    "Qalam: couldn't update Claude Code's stylesheet"
-  )) return;
-  reloadPrompt(next
-    ? 'Qalam: Claude Code chat is now right-to-left. Reload the window to see it.'
-    : 'Qalam: Claude Code RTL turned off. Reload to restore the original layout.');
+  await saveClaudeSetting('claudeCodeRtl', next);
+  // The configuration-change handler applies the patch; do it here too so the
+  // command works even if the value happened not to change (idempotent — the
+  // handler then sees nothing to write and stays quiet). Runs regardless of
+  // whether the save above succeeded, so the change is always visible now.
+  applyClaudePatches({ prompt: true });
 }
 
-async function toggleClaudeTemplates() {
-  const cfg = vscode.workspace.getConfiguration('rtlMarkdown');
-  const next = !cfg.get('claudeCodeTemplates');
-  const res = setClaudeTemplates(next);
-  await cfg.update('claudeCodeTemplates', next, vscode.ConfigurationTarget.Global);
-  updateClaudeRtlStatus();
-  if (!reportPatchResult(
-    res,
-    'Qalam: Claude Code is not installed, so the templates button has nothing to attach to. The setting was saved for when it is.',
-    "Qalam: couldn't update Claude Code's webview script"
-  )) return;
-  reloadPrompt(next
-    ? 'Qalam: a prompt-templates button was added inside Claude Code. Reload the window to see it.'
-    : 'Qalam: the Claude Code templates button was removed. Reload to apply.');
-}
-
-function updateClaudeRtlStatus() {
-  if (!claudeRtlStatusItem) return;
-  const on = vscode.workspace.getConfiguration('rtlMarkdown').get('claudeCodeRtl');
-  claudeRtlStatusItem.text = on ? '$(comment-discussion) Claude RTL' : '$(comment-discussion) Claude RTL: off';
-  claudeRtlStatusItem.tooltip = on
-    ? 'Claude Code chat is set to right-to-left (Persian/Arabic/Hebrew/Urdu read RTL; English & code stay LTR).\nClick to turn off. A window reload applies changes.'
-    : 'Claude Code chat is left-to-right.\nClick to make it right-to-left. A window reload applies changes.';
-}
-
-// ── "Send to Claude Code" — push a template straight into Claude's chat ──
-// Native UI can't be typed into from outside, so we copy + focus + guide a
-// single paste. In terminal mode we can type the text in directly.
-function findClaudeTerminal() {
-  return vscode.window.terminals.find((t) => /claude/i.test(t.name || ''));
-}
-
-async function sendTemplateToClaude() {
-  const templates = getPromptTemplates();
-  if (templates.length === 0) {
-    const c = await vscode.window.showInformationMessage('Qalam: you have no prompt templates yet.', 'Add templates…');
-    if (c) editPromptTemplates();
-    return;
-  }
-  const items = templates.map((t) => ({ label: t.name, detail: previewLine(t.body), body: t.body }));
-  items.push({ label: '$(gear) Edit templates…', detail: 'Open settings to add or change templates', body: null });
+// Pick a color theme for the Claude Code chat from a quick-pick.
+async function pickClaudeTheme() {
+  const current = getClaudeTheme();
+  const items = [
+    { label: (current === 'default' ? '$(check) ' : '$(circle-slash) ') + 'Default', description: "Claude Code's own colors", value: 'default' },
+    ...Object.keys(CC_THEMES).map((k) => ({
+      label: (k === current ? '$(check) ' : '$(paintcan) ') + CC_THEMES[k].label,
+      description: k === current ? 'current' : (CC_THEMES[k].dark ? 'dark' : 'light'),
+      value: k
+    }))
+  ];
   const pick = await vscode.window.showQuickPick(items, {
-    placeHolder: 'Send a prompt template to Claude Code',
-    matchOnDetail: true
+    placeHolder: 'Pick a color theme for the Claude Code chat (a window reload applies it)'
   });
   if (!pick) return;
-  if (pick.body === null) { editPromptTemplates(); return; }
+  await saveClaudeSetting('claudeCodeTheme', pick.value);
+  // Apply immediately. If the value actually changed, the config-change handler
+  // also fires but finds the disk already in sync (changed:0) and stays quiet,
+  // so the user always gets exactly one reload prompt.
+  applyClaudePatches({ prompt: true });
+}
 
-  await vscode.env.clipboard.writeText(pick.body);
-
-  // Terminal mode: type it straight into the Claude CLI (without pressing Enter).
-  const term = findClaudeTerminal();
-  if (term) {
-    term.show(true);
-    term.sendText(pick.body, false);
-    vscode.window.setStatusBarMessage('$(check) Sent to the Claude Code terminal — press Enter to run', 4000);
-    return;
+function updateClaudeStatus() {
+  const cfg = vscode.workspace.getConfiguration('rtlMarkdown');
+  if (claudeRtlStatusItem) {
+    const on = cfg.get('claudeCodeRtl');
+    claudeRtlStatusItem.text = on ? '$(comment-discussion) Claude RTL' : '$(comment-discussion) Claude RTL: off';
+    claudeRtlStatusItem.tooltip = on
+      ? 'Claude Code chat is set to right-to-left (Persian/Arabic/Hebrew/Urdu read RTL; English & code stay LTR).\nClick to turn off. A window reload applies changes.'
+      : 'Claude Code chat is left-to-right.\nClick to make it right-to-left. A window reload applies changes.';
   }
-
-  // Native UI: make sure Claude is open, focus its input, then guide one paste.
-  try {
-    if (!vscode.commands.getCommands) { /* very old VS Code */ }
-    const cmds = await vscode.commands.getCommands(true);
-    if (cmds.includes('claude-vscode.editor.openLast')) {
-      await vscode.commands.executeCommand('claude-vscode.editor.openLast');
-    }
-    if (cmds.includes('claude-vscode.focus')) {
-      await vscode.commands.executeCommand('claude-vscode.focus');
-    }
-  } catch (_) { /* Claude Code not installed / command unavailable — fall through */ }
-
-  vscode.window.setStatusBarMessage('$(clippy) Template copied & Claude focused — paste with Ctrl/Cmd+V', 5000);
+  if (claudeThemeStatusItem) {
+    const name = getClaudeTheme();
+    const themed = !!CC_THEMES[name];
+    const label = themed ? CC_THEMES[name].label : 'off';
+    claudeThemeStatusItem.text = `$(paintcan) Theme: ${label}`;
+    claudeThemeStatusItem.tooltip = `Claude Code chat theme: ${label}.\nClick to try another theme (11 to choose from). A window reload applies it.`;
+  }
 }
 
 class RtlMarkdownEditorProvider {
@@ -738,9 +774,10 @@ module.exports.__test__ = {
   findClaudeCssPaths,
   claudeRtlIsApplied,
   setClaudeRtl,
-  setClaudeTemplates,
+  setClaudeTheme,
   claudeRtlBlock,
-  claudeTemplatesBlock,
+  claudeThemeBlock,
+  CC_THEMES,
   CC_RTL_BLOCK_RE,
-  CC_TPL_BLOCK_RE
+  CC_THEME_BLOCK_RE
 };

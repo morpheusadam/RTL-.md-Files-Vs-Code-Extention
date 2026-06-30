@@ -1,8 +1,8 @@
 {
   "name": "qalam-rtl-markdown",
   "displayName": "Master RTL — RTL for Claude Code, Markdown & AI Chat",
-  "description": "Master RTL makes Claude Code, Markdown and AI chat truly right-to-left in VS Code. Read & write Persian (فارسی), Arabic (العربية), Hebrew (עברית) and Urdu (اردو) naturally: one-click RTL for the Claude Code chat panel, a prompt-templates button inside Claude Code itself, a real RTL Markdown editor with live preview, 11 reading themes, colorful code highlighting, a live outline, a formatting toolbar and reusable AI prompt templates. English and code stay left-to-right automatically.",
-  "version": "3.3.0",
+  "description": "Master RTL makes Claude Code, Markdown and AI chat truly right-to-left in VS Code. Read & write Persian (فارسی), Arabic (العربية), Hebrew (עברית) and Urdu (اردو) naturally: one-click RTL for the Claude Code chat panel, 11 beautiful color themes for the Claude Code chat (Dracula, Nord, Tokyo Night, Catppuccin…), a real RTL Markdown editor with live preview, 11 reading themes, colorful code highlighting, a live outline, a formatting toolbar and reusable AI prompt templates. English and code stay left-to-right automatically.",
+  "version": "3.4.1",
   "publisher": "morpheusadam",
   "license": "MIT",
   "icon": "icon.png",
@@ -112,12 +112,8 @@
         "title": "Master RTL: Right-to-Left for Claude Code (toggle)"
       },
       {
-        "command": "rtlMarkdown.toggleClaudeTemplates",
-        "title": "Master RTL: Prompt-Templates Button in Claude Code (toggle)"
-      },
-      {
-        "command": "rtlMarkdown.sendTemplateToClaude",
-        "title": "Master RTL: Send Prompt Template to Claude Code"
+        "command": "rtlMarkdown.pickClaudeTheme",
+        "title": "Master RTL: Claude Code Chat Theme…"
       }
     ],
     "menus": {
@@ -144,10 +140,38 @@
           "default": true,
           "markdownDescription": "Make the **Claude Code** chat panel right-to-left. Master RTL adds a small, clearly-marked, fully reversible stylesheet block to Claude Code's own webview CSS so Persian/Arabic/Hebrew/Urdu read right-to-left, while English text and code blocks stay left-to-right. Reapplies automatically after Claude Code updates. **A window reload is required** for changes to take effect. Toggle live from the status-bar **Claude RTL** button or the command **Master RTL: Right-to-Left for Claude Code**."
         },
-        "rtlMarkdown.claudeCodeTemplates": {
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "Add a **prompt-templates button** directly inside the **Claude Code** chat input. Master RTL injects a small, clearly-marked, fully reversible script into Claude Code's own webview; clicking the button drops your chosen template from `#rtlMarkdown.promptTemplates#` straight into the chat box. The button stays in sync whenever you edit your templates, and reapplies automatically after Claude Code updates. **A window reload is required** for changes to take effect. Toggle with the command **Master RTL: Prompt-Templates Button in Claude Code**."
+        "rtlMarkdown.claudeCodeTheme": {
+          "type": "string",
+          "enum": [
+            "default",
+            "dracula",
+            "nord",
+            "one-dark",
+            "tokyo-night",
+            "catppuccin",
+            "gruvbox",
+            "solarized-dark",
+            "rose-pine",
+            "synthwave",
+            "sepia",
+            "github-light"
+          ],
+          "enumDescriptions": [
+            "Use Claude Code's own colors (no theme)",
+            "Dracula — purple/pink on dark",
+            "Nord — cool blue-gray",
+            "One Dark — Atom's classic dark",
+            "Tokyo Night — deep blue/purple",
+            "Catppuccin Mocha — soft pastel dark",
+            "Gruvbox Dark — warm retro",
+            "Solarized Dark — muted teal",
+            "Rosé Pine — soft muted dark",
+            "Synthwave — neon pink/cyan",
+            "Sepia (Paper) — warm light",
+            "GitHub Light — clean light"
+          ],
+          "default": "tokyo-night",
+          "markdownDescription": "Color theme for the **Claude Code** chat panel. Master RTL adds a small, clearly-marked, fully reversible block to Claude Code's own webview CSS that recolors the chat — backgrounds, message text, code surface, accents and links. Code syntax tokens keep following your active VS Code editor theme. Pick a theme from the status-bar **Claude Theme** button or the command **Master RTL: Claude Code Chat Theme…**. Reapplies automatically after Claude Code updates. **A window reload is required** for changes to take effect. Set to `default` to restore Claude Code's own colors."
         },
         "rtlMarkdown.fontFamily": {
           "type": "string",

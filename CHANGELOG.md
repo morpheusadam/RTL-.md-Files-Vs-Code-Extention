@@ -2,6 +2,24 @@
 
 All notable changes to the **Master RTL** extension are documented here.
 
+## [3.4.1]
+
+### Fixed
+- **🎨 Claude Code chat theme was stuck and threw an error when changed.** After Claude Code updated itself, VS Code left the previous version's folder on disk (listed in `.obsolete`). Master RTL tried to patch **every** `anthropic.claude-code-*` folder it found, including that superseded copy — and because the old folder is locked / mid-deletion, the write failed with `EPERM`/`EBUSY`/`ENOENT`. That single error made the extension report *"couldn't update Claude Code's stylesheet"* **and skip the reload prompt**, so even though the live install was actually re-themed, the chat was never reloaded and appeared frozen on the previous theme (e.g. **GitHub Light**). Master RTL now patches **only the live install** and ignores versions VS Code has marked obsolete.
+- **Changing the theme/RTL from VS Code's Settings UI did nothing.** Editing `rtlMarkdown.claudeCodeTheme` (or `rtlMarkdown.claudeCodeRtl`) in Settings only refreshed the status bar — it never re-wrote Claude Code's CSS, so the choice silently didn't apply. The setting now re-patches the stylesheet and prompts a reload, exactly like the status-bar picker.
+- **A failure on a leftover copy no longer blocks a successful change.** If the live install is patched but a stale copy can't be written, Master RTL now treats the change as successful (and still prompts the reload) instead of surfacing a misleading error.
+
+## [3.4.0]
+
+### Added
+- **🎨 Color themes for the Claude Code chat** — recolor the whole **Claude Code** chat panel with one of **11 hand-tuned themes**: **Dracula, Nord, One Dark, Tokyo Night, Catppuccin Mocha, Gruvbox Dark, Solarized Dark, Rosé Pine, Synthwave, Sepia (Paper)** and **GitHub Light**. Each theme restyles backgrounds, message text, the code-block surface, accents and links for a cohesive, professional look. Pick one from the status-bar **Claude Theme** button or the command **Master RTL: Claude Code Chat Theme…**, or set `rtlMarkdown.claudeCodeTheme` (default **Tokyo Night**). A **window reload** applies the change.
+
+### How it works
+- Claude Code's chat is built on its own semantic CSS variables (`--app-*`, falling back to `--vscode-*`). Master RTL appends a single guarded, reversible block to Claude Code's own `webview/index.css` that re-defines those variables. It's **CSS only**, idempotent, re-applied after Claude Code updates, and removed cleanly when you pick **Default**. Code **syntax tokens** are produced by Monaco from your active VS Code editor theme, so they keep following it while the theme harmonizes everything around them.
+
+### Removed
+- The **prompt-templates button** that 3.3.0 injected into the Claude Code input has been removed (it injected JavaScript into Claude Code's webview). Master RTL no longer modifies Claude Code's `index.js` — only its stylesheet. Your reusable prompt templates remain available via the status-bar **Prompts** button and **Master RTL: Insert AI Prompt Template**.
+
 ## [3.3.0]
 
 ### Added

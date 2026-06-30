@@ -86,7 +86,7 @@ A real right-to-left custom editor for `.md` with live, synced preview.
 <td width="50%" valign="top">
 
 - 🤖 **Right-to-left Claude Code chat** — one click; English & code stay LTR
-- 📋 **Templates button inside Claude Code** — drop a prompt into the chat with one click
+- 🎨 **11 color themes for Claude Code** — Dracula, Nord, Tokyo Night, Catppuccin & more
 - 🪶 **True RTL editing** — right-aligned, natural right-to-left base direction
 - 🎨 **Colorful code** — offline syntax highlighting for 17+ languages, with a language badge and one-click **Copy**
 - 📖 **11 reading themes** — Auto · GitHub · Sepia · Nord · Dracula · One Dark · Solarized Light/Dark · Rosé Pine · Gruvbox · Monokai
@@ -141,31 +141,34 @@ Claude Code renders its chat inside a **sandboxed webview**, so no extension can
 
 <br/>
 
-- The RTL change is **CSS only** — it never touches Claude Code’s JavaScript, so it can’t break functionality.
-- The optional **templates button** adds a tiny script to Claude Code’s webview; it’s wrapped in a `try/catch` so any error is swallowed and **Claude Code keeps working** no matter what.
-- Both patches are **idempotent and reversible**: exactly one marked block is added per file; toggling off restores the original byte-for-byte.
+- Both the RTL and color-theme changes are **CSS only** — Master RTL never touches Claude Code’s JavaScript, so it can’t break functionality.
+- Both are **idempotent and reversible**: exactly one marked block is added per feature; turning a feature off restores the original byte-for-byte.
 - The RTL rules are **scoped to chat text and the input** — toolbars, buttons and icons keep their original positions.
-- Verified by an offline test suite (`npm test`) plus a headless-browser check of the templates button.
+- Verified by an offline test suite (`npm test`, 27 assertions) and headless-browser render checks of every theme.
 - GitHub Copilot’s chat is closed-source and **not** patched; use the prompt templates below with it.
 
 </details>
 
 ---
 
-## 📋 Prompt templates, right inside Claude Code
+## 🎨 Color themes for the Claude Code chat
 
-Master RTL puts a **templates button** in the Claude Code chat input. Click it, pick one of your saved prompts, and it drops straight into the chat box — no copy/paste, no leaving the panel.
+Give the **Claude Code chat** a cohesive, professional look with one of **11 hand-tuned themes** — and switch between them in a click.
 
 ```text
-1. Set your prompts in  rtlMarkdown.promptTemplates  (6 useful Persian starters included)
-2. Click the 📋 button in the Claude Code input  →  pick a template  →  it’s inserted
+Status-bar “Claude Theme” button  →  pick a theme  →  Reload Window
 ```
 
-- Your templates live in one setting and the button **stays in sync** when you edit them.
-- Re-applied automatically after Claude Code updates; toggle it off anytime with **Master RTL: Prompt-Templates Button in Claude Code** (`rtlMarkdown.claudeCodeTemplates`).
-- Prefer the keyboard? **Master RTL: Send Prompt Template to Claude Code** copies a template, focuses the chat, and — in **terminal mode** — types it straight in.
+| Dark | Light |
+|---|---|
+| Dracula · Nord · One Dark · Tokyo Night · Catppuccin Mocha · Gruvbox Dark · Solarized Dark · Rosé Pine · Synthwave | Sepia (Paper) · GitHub Light |
 
-> ℹ️ Like the RTL feature, a **window reload** applies changes to the button.
+- Each theme recolors **backgrounds, message text, the code-block surface, accents and links** — the whole panel, not just one piece.
+- **Code syntax tokens** keep following your active VS Code editor theme, so code stays readable; the theme harmonizes everything around it.
+- Set it from the status-bar **Claude Theme** button, the command **Master RTL: Claude Code Chat Theme…**, or the `rtlMarkdown.claudeCodeTheme` setting (default **Tokyo Night**). Pick **Default** to restore Claude Code’s own colors.
+- It’s **CSS only**, reversible, and re-applied automatically after Claude Code updates.
+
+> ℹ️ Like the RTL feature, a **window reload** applies a theme change.
 
 ---
 
@@ -202,7 +205,7 @@ Master RTL is built for developers who code with **AI** *and* write right-to-lef
 | Setting | Default | Description |
 |---|---|---|
 | `rtlMarkdown.claudeCodeRtl` | `true` | Make the **Claude Code** chat panel right-to-left (English & code stay LTR). Re-applies after Claude Code updates; needs a window reload |
-| `rtlMarkdown.claudeCodeTemplates` | `true` | Add a **prompt-templates button** inside the Claude Code chat input. Re-applies after Claude Code updates; needs a window reload |
+| `rtlMarkdown.claudeCodeTheme` | `tokyo-night` | **Color theme** for the Claude Code chat (`default`, `dracula`, `nord`, `one-dark`, `tokyo-night`, `catppuccin`, `gruvbox`, `solarized-dark`, `rose-pine`, `synthwave`, `sepia`, `github-light`). Needs a window reload |
 | `rtlMarkdown.fontFamily` | `Vazirmatn, Tahoma, 'Segoe UI', sans-serif` | Font family for editor & preview |
 | `rtlMarkdown.fontSize` | `16` | Font size in pixels |
 | `rtlMarkdown.lineHeight` | `2` | Line height |
@@ -219,8 +222,7 @@ Master RTL is built for developers who code with **AI** *and* write right-to-lef
 | Action | How |
 |---|---|
 | **Make Claude Code chat RTL** | Status-bar **Claude RTL** button · **Master RTL: Right-to-Left for Claude Code** |
-| **Templates button in Claude Code** | **Master RTL: Prompt-Templates Button in Claude Code** (toggle) |
-| **Send a template to Claude Code** | **Master RTL: Send Prompt Template to Claude Code** |
+| **Theme the Claude Code chat** | Status-bar **Claude Theme** button · **Master RTL: Claude Code Chat Theme…** |
 | Insert an AI prompt template | Status-bar **Prompts** button · **Master RTL: Insert AI Prompt Template** |
 | Toggle the RTL Markdown editor | Status-bar **RTL** button · **Master RTL: Toggle RTL Markdown Editor** |
 | Save | `Ctrl / Cmd + S` |
